@@ -1,0 +1,42 @@
+# aider.yml: Example configuration file for Aider
+project_types:
+  - nodejs
+  - python
+  - java_maven
+
+includes:
+  # Node.js-related files
+  - "**/*.js"
+  - "**/*.json"
+  - "**/package.json"
+  - "**/package-lock.json"
+  
+  # Python-related files
+  - "**/*.py"
+  - "**/requirements.txt"
+  - "**/Pipfile"
+  - "**/Pipfile.lock"
+
+  # Java Maven-related files
+  - "**/*.java"
+  - "**/pom.xml"
+  - "**/*.properties"
+
+excludes:
+  # Node.js: Ignore node_modules directory
+  - "**/node_modules/**"
+  
+  # Python: Ignore virtual environment directories
+  - "**/venv/**"
+  - "**/.venv/**"
+  
+  # Java Maven: Ignore target directory
+  - "**/target/**"
+  
+  # Common exclusions for all project types
+  - "**/*.log"
+  - "**/.git/**"
+  - "**/*.tmp"
+  - "**/.DS_Store"
+
+auto_commit: false  # Explicitly disable automatic commits

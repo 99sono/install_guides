@@ -33,6 +33,7 @@ conda install package=1.2.3         # Install specific version
 ```bash
 conda list                         # List installed packages
 conda update --all                 # Update all packages
+conda install python=3.13.3        # Update the python version of the selected conda environment
 conda remove package_name          # Remove a package
 ```
 
@@ -51,7 +52,12 @@ conda remove package_name          # Remove a package
 ```bash
 conda install numpy pandas
 pip install some_missing_package
+pip list    # list packages installed by pip
+pip list --outdated # list oudate packages
+pip install --upgrade   packagename # upgrade outdated packages 
+pip install --upgrade pip  #upgrade pip
 ```
+
 
 ### Environment Export/Import
 ```bash
