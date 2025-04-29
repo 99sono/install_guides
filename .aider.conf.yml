@@ -1,42 +1,45 @@
-# aider.yml: Example configuration file for Aider
-project_types:
-  - nodejs
-  - python
-  - java_maven
+## Specify the model to use for the main chat
+# model: ollama/qwen2.5:7b
+# model: ollama/gemma3:12b
+model: ollama/gemma3:1b
 
-includes:
-  # Node.js-related files
-  - "**/*.js"
-  - "**/*.json"
-  - "**/package.json"
-  - "**/package-lock.json"
-  
-  # Python-related files
-  - "**/*.py"
-  - "**/requirements.txt"
-  - "**/Pipfile"
-  - "**/Pipfile.lock"
 
-  # Java Maven-related files
-  - "**/*.java"
-  - "**/pom.xml"
-  - "**/*.properties"
+## Specify the model to use for commit messages and chat history summarization (default depends on --model)
+# weak-model: ollama/qwen2.5:7b
 
-excludes:
-  # Node.js: Ignore node_modules directory
-  - "**/node_modules/**"
-  
-  # Python: Ignore virtual environment directories
-  - "**/venv/**"
-  - "**/.venv/**"
-  
-  # Java Maven: Ignore target directory
-  - "**/target/**"
-  
-  # Common exclusions for all project types
-  - "**/*.log"
-  - "**/.git/**"
-  - "**/*.tmp"
-  - "**/.DS_Store"
 
-auto_commit: false  # Explicitly disable automatic commits
+# Server Configuration property does not exist exist
+# We need to export OLLAMA_API_BASE=http://127.0.0.1:11434 
+# server: http://localhost:11434
+# The Yaml configuration is open-ai-base
+## Specify the api base url
+openai-api-base: http://localhost:11434
+# ollama-api-base: http://localhost:11434
+
+###############
+# Git Settings:
+
+## Enable/disable looking for a git repo (default: True)
+git: true
+
+## Enable/disable adding .aider* to .gitignore (default: True)
+gitignore: false
+
+## Specify the aider ignore file (default: .aiderignore in git root)
+aiderignore: .aiderignore
+
+## Only consider files in the current subtree of the git repository
+#subtree-only: false
+
+## Enable/disable auto commit of LLM changes (default: True)
+auto-commits: false
+
+## Run aider in your browser
+#gui: false
+
+## Enable/disable suggesting shell commands (default: True)
+#suggest-shell-commands: true
+
+set-env:
+  - OLLAMA_API_BASE=http://127.0.0.1:11434 
+

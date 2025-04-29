@@ -1,0 +1,25 @@
+
+# Metadata about models
+
+See:
+https://github.com/Aider-AI/aider/blob/main/aider/resources/model-metadata.json
+
+For example:
+```
+  "deepseek-reasoner": {
+        "max_tokens": 8192,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8192,
+        "input_cost_per_token": 0.00000055,
+        "input_cost_per_token_cache_hit": 0.00000014,
+        "cache_read_input_token_cost": 0.00000014,
+        "cache_creation_input_token_cost": 0.0,
+        "output_cost_per_token": 0.00000219,
+        "litellm_provider": "deepseek",
+        "mode": "chat",
+        //"supports_function_calling": true, 
+        "supports_assistant_prefill": true,
+        //"supports_tool_choice": true,
+        "supports_prompt_caching": true
+    }
+```

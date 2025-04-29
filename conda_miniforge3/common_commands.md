@@ -48,10 +48,11 @@ conda remove package_name          # Remove a package
    - Only when package is not available via conda
    - Install after conda packages to avoid conflicts
 
-### Example of Mixed Package Management
+### Example of Mixed Package Management (not recommended)
 ```bash
-conda install numpy pandas
+conda install numpy pandas  # install a library with conda
 pip install some_missing_package
+pip install -r requirements.txt # installs a list of requirements with pip
 pip list    # list packages installed by pip
 pip list --outdated # list oudate packages
 pip install --upgrade   packagename # upgrade outdated packages 
