@@ -1,7 +1,12 @@
 ## Specify the model to use for the main chat
-# model: ollama/qwen2.5:7b
-# model: ollama/gemma3:12b
-model: ollama_chat/gemma3:4b
+# Dense models
+# model: ollama_chat/qwen2.5:7b
+# model: ollama_chat/gemma3:12b
+# model: ollama_chat/gemma3:4b
+
+#  Section containing Mixture of experts model (the less active parameters the more able to run on the CPU)
+# mixture of experts model
+model: ollama_chat/qwen3:30b-a3b
 
 
 ## Specify the model to use for commit messages and chat history summarization (default depends on --model)
