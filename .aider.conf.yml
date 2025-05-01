@@ -1,7 +1,7 @@
 ## Specify the model to use for the main chat
 # model: ollama/qwen2.5:7b
 # model: ollama/gemma3:12b
-model: ollama/gemma3:1b
+model: ollama_chat/gemma3:4b
 
 
 ## Specify the model to use for commit messages and chat history summarization (default depends on --model)
