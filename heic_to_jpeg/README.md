@@ -6,23 +6,12 @@ This guide explains how to convert a folder of `.HEIC` images—such as those do
 
 Before you begin, ensure you have:
 
-*   **WSL2 (Ubuntu):**  Follow the official Microsoft documentation to set up WSL2.
-*   **Required Packages:** Install the following packages in your Ubuntu WSL2 terminal:
-
-    ```bash
-    sudo apt update
-    sudo apt install libheif-examples imagemagick
-    ```
+*   **WSL2 (Ubuntu):** Follow the [official Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install) to set up WSL2.
 
 ## Installation Steps
 
-For a detailed breakdown of the installation process, refer to the `heic_to_jpeg/installation_steps.md` file. This document provides a step-by-step guide to setting up the necessary tools.
+For a detailed breakdown of the installation process, refer to the [installation steps](./installation_steps.md) file.
 
 ## Troubleshooting
 
-If you encounter any issues during the conversion process, consult the `heic_to_jpeg/troubleshooting.md` file for common problems and their solutions.
-
-## Further Reading
-
-*   `heic_to_jpeg/installation_steps.md`: Detailed installation instructions.
-*   `heic_to_jpeg/troubleshooting.md`:  Solutions to common problems.
+If you encounter any issues during the conversion process, consult the [troubleshooting guide](./troubleshooting.md) for common problems and their solutions.
