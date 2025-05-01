@@ -1,3 +1,4 @@
+
 # Aider Installation Guide
 
 ## Overview
@@ -51,13 +52,53 @@ To ensure proper functionality, Aider requires a **correctly configured model me
 
 ---
 
+## Preparing Your Project Structure
+
+Before running Aider, it is important to ensure that your project follows a well-organized structure. A properly set up project might look like this:
+
+```
+ tree
+.
+.aider.conf.yml
+├── README.md
+├── aider
+│   ├── README.md
+│   ├── aider_conf.md
+│   ├── common_commands.md
+│   ├── installation_steps.md
+│   ├── model_metadata.md
+│   ├── sample.aider.conf.yml
+│   ├── sample_docker_compose_for_ollama.md
+│   └── troubleshooting.md
+├── conda_miniforge3
+│   ├── README.md
+│   ├── common_commands.md
+│   └── installation_steps.md
+├── heic_to_jpeg
+│   ├── README.md
+│   ├── installation_steps.md
+│   └── troubleshooting.md
+├── scripts
+│   └── 00_launch_aider.sh
+```
+
+Key components:
+- **Root-Level `.aider.conf.yml` File**  
+  Ensure that your **`.aider.conf.yml`** is placed at the root of the project and contains the correct model and API configurations. Refer to **[aider_conf.md](aider_conf.md)** for guidance.
+
+- **Dedicated `scripts/` Directory**  
+  A `scripts/` folder can house useful helper scripts, such as **`00_launch_aider.sh`**, which automates launching Aider with the correct context.  
+  See **[common_commands.md](common_commands.md)** for details on running Aider.
+
+---
+
 ## Running Aider
 
-Once installed, simply start Aider by running:
+Once your project is structured correctly, you can launch Aider using:
 ```bash
 aider
 ```
-For interaction details, check **[common_commands.md](common_commands.md)**.
+For further interaction details and commands, refer to **[common_commands.md](common_commands.md)**.
 
 ---
 
@@ -82,4 +123,3 @@ For more details, refer to the full troubleshooting document.
 ## Acknowledgment
 
 Special thanks to **Microsoft Edge Copilot** for its invaluable assistance in structuring this guide and improving the clarity of documentation. The support provided by this tool has greatly enhanced the usability and quality of this guide.
-
