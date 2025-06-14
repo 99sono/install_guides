@@ -1,4 +1,3 @@
-
 # Aider Installation Guide
 
 ## Overview
@@ -22,6 +21,7 @@ This installation guide follows a modular approach:
 | [model_metadata.md](model_metadata.md) | Explanation of model metadata and configuration requirements for running Ollama optimally. |
 | [aider_conf.md](aider_conf.md) | Sample Aider configuration (`.aider.conf.yml`) for seamless integration with Ollama. |
 | [sample_docker_compose_for_ollama.md](sample_docker_compose_for_ollama.md) | Example **Docker Compose** configuration for running **Ollama** alongside **Aider**. |
+| [upgrade_aider.md](upgrade_aider.md) | Instructions for maintaining and upgrading your Aider installation over time. |
 
 ---
 
