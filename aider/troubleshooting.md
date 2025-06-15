@@ -58,39 +58,9 @@ python -m pip install --upgrade aider-install
 
 ---
 
-## **4. WSL2 Freezing Issues & Recovery Steps**
+## WSL2 Issues
 
-If you are running Aider or Ollama inside Windows Subsystem for Linux 2 (WSL2) and encounter freezing or unresponsive behavior, follow these steps to recover your environment:
-
-### 1. Attempt WSL Shutdown
-Open a Windows terminal (such as Command Prompt or PowerShell) and run:
-```powershell
-wsl --shutdown
-```
-This command stops all running WSL instances. Wait a few seconds, then try launching your WSL terminal again.
-
-### 2. Restart Windows Service
-If WSL remains unresponsive or terminals do not open, restart the Hyper-V Host Compute Service:
-- Open **PowerShell as Administrator** (right-click PowerShell and select "Run as administrator").
-- Run the following commands:
-```powershell
-net stop vmcompute
-net start vmcompute
-```
-This will restart the service responsible for managing WSL2 virtual machines.
-
-### 3. Verify Recovery
-After restarting, open a new terminal and run:
-```powershell
-wsl
-```
-If WSL launches successfully, your environment should be restored.
-
----
-
-**Related Issues:**
-- If you encounter persistent problems with WSL2, see the [General Troubleshooting Tips](#3-general-troubleshooting-tips) above for additional steps, such as verifying configuration files and reinstalling dependencies.
-- For issues specific to Ollama or Aider inside WSL2, ensure that all environment variables and network configurations are set correctly as described in previous sections.
+If you are running Aider or Ollama inside Windows Subsystem for Linux 2 (WSL2) and encounter freezing or unresponsive behavior, please refer to the dedicated [WSL2 Guide and Troubleshooting](../wsl2/README.md#troubleshooting-wsl2-issues) for detailed recovery steps and solutions.
 
 ---
 
