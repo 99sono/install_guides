@@ -1,8 +1,3 @@
-Absolutely. Below is a long-form, structured, production-quality **Markdown guide** that documents your Docker Desktop storage migration from `C:` to `D:` on Windows, **driven entirely via WSL2 Ubuntu**.
-
----
-
-```markdown
 # 📦 Guide: Migrating Docker Desktop WSL2 Storage to the D: Drive via Ubuntu WSL2
 
 ## 🧭 Overview
@@ -310,14 +305,3 @@ docker volume rm $(docker volume ls -q)
 ---
 
 *Guide prepared for developers managing Docker Desktop from WSL2 Ubuntu, prioritizing disk hygiene and reproducibility.*
-
-```
-
----
-
-Would you like me to also:
-- Package all the above shell scripts into files you can easily download?
-- Add a section about logging or error traps in the scripts?
-
-Let me know if you'd like to continue to **migrate the Ubuntu WSL2 distro** after this.
-```
