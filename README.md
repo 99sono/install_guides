@@ -3,6 +3,15 @@
 ## Introduction
 This repository contains **installation guides** for various tools and technologies, providing structured steps and best practices for setting up software efficiently. Each tool has its own dedicated directory, ensuring easy navigation and separation of concerns.
 
+### Available Guides
+- **aider/**: Guide for installing, configuring, and troubleshooting Aider (an LLM-powered development tool), including integration with Ollama and Docker.
+- **conda_miniforge3/**: Installation and usage of Miniforge3 (Conda) for Python environments, with common commands and troubleshooting.
+- **docker_desktop_wsl2_drive_migration_c_to_d/**: Guide and scripts for migrating Docker Desktop's WSL2 storage from the C: drive to the D: drive on Windows, including backup, purge, verification, and restore steps.
+- **heic_to_jpeg/**: Instructions for converting HEIC images to JPEG on WSL2 Ubuntu, including installation, conversion steps, and troubleshooting.
+- **self_signed_certificate/**: Guide for generating and installing self-signed certificates, especially for ASUS routers, with scripts and troubleshooting.
+- **wsl2/**: Documentation for installing, updating, and troubleshooting Windows Subsystem for Linux 2 (WSL2).
+- **scripts/**: Utility scripts to support the other guides (e.g., launching Aider).
+
 ## Repository Structure
 All installation guides follow the same **organizational structure**, ensuring consistency across different technologies.
 
@@ -16,6 +25,15 @@ install_guides/
 │   ├── installation_steps.md
 │   ├── common_commands.md
 │   └── troubleshooting.md
+├── docker_desktop_wsl2_drive_migration_c_to_d/
+│   ├── README.md
+│   ├── 01_backup_images.sh
+│   ├── 02_prepare_d_drive.sh
+│   ├── 03_purge_docker.sh
+│   ├── 05_verify_docker_clean.sh
+│   ├── 06_restore_images.sh
+│   └── metadata/
+│       └── 01_instructions_to_make_this_project.md
 ├── nodejs/
 │   ├── README.md
 │   ├── installation_guide.md
