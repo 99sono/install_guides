@@ -10,6 +10,7 @@ This repository contains **installation guides** for various tools and technolog
 - **heic_to_jpeg/**: Instructions for converting HEIC images to JPEG on WSL2 Ubuntu, including installation, conversion steps, and troubleshooting.
 - **self_signed_certificate/**: Guide for generating and installing self-signed certificates, especially for ASUS routers, with scripts and troubleshooting.
 - **wsl2/**: Documentation for installing, updating, and troubleshooting Windows Subsystem for Linux 2 (WSL2).
+- **tips_working_with_ssh_keys/**: Guide for managing SSH keys with passphrases in WSL2 Ubuntu, eliminating repeated password prompts for Git operations.
 - **scripts/**: Utility scripts to support the other guides (e.g., launching Aider).
 
 ## Repository Structure
@@ -76,4 +77,4 @@ install_guides/
 - Ensure troubleshooting steps reference **error messages users might encounter**.
 
 ## Recognition
-Special thanks to **Microsoft Copilot** for assisting in structuring this repository and improving installation documentation. 😊
+Special thanks to **Microsoft Copilot, Kimi K2** for assisting in structuring this repository and improving installation documentation. 😊
