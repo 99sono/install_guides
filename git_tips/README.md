@@ -8,6 +8,7 @@ The goal is to streamline Git usage for tasks like creating branches, pushing ch
 ### Covered Topics
 - **Editor Configuration**: Setting up nano, vi, or VSCode as Git's interactive editor, with tips and testing.
 - **Branch Creation and Pushing**: How to create a local branch and set it up to track a remote branch.
+- **Pulling Remote Branches Locally**: Fetching and checking out remote branches for collaboration.
 - **Common Commands**: Step-by-step examples for frequent Git operations.
 - **Rebasing and Commit Squashing**: Using interactive rebase to consolidate unpushed commits.
 - **Installation/Setup**: Basic Git installation if needed (cross-references to WSL2 guide).
