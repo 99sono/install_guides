@@ -224,8 +224,44 @@ A branch was created remotely (e.g., by a teammate via GitHub UI or another deve
 
 Refer to `troubleshooting.md` for fetch/pull errors or tracking issues.
 
+## 5. Deleting a Remote Feature Branch After Merge
+
+### Scenario
+After a merge request (pull request) is completed and merged into the main branch (e.g., main/master), clean up by deleting the now-unnecessary feature branch from the remote repository (e.g., GitHub) to keep the remote branch list tidy.
+
+### Prerequisites
+- The merge request has been approved and merged.
+- You have push access to the remote repository.
+- Fetch the latest remote state: `git fetch origin` to ensure you're up to date.
+- The local branch may still exist; this command only affects the remote.
+
+### Steps
+
+1. **Delete the Remote Branch**:
+   ```
+   git push origin --delete feature/99sono_upgrade_software_versions_and_coding_agents
+   ```
+   - `--delete` (or `-d`) removes the specified branch from the remote.
+   - Replace `feature/99sono_upgrade_software_versions_and_coding_agents` with your actual branch name.
+   - Output example:
+     ```
+     To https://github.com/99sono/install_guides.git
+      - [deleted]         feature/99sono_upgrade_software_versions_and_coding_agents
+     ```
+
+### Verification
+- Check remote branches: `git fetch origin && git branch -r` (the deleted branch should no longer appear).
+- On GitHub: Refresh the repository branches page; the branch should be gone.
+
+### Tips
+- This does not delete your local branch. To delete locally: `git branch -d feature/99sono_upgrade_software_versions_and_coding_agents` (use `-D` to force if not fully merged).
+- For protected branches (e.g., main), you may need additional permissions or use the GitHub UI.
+- Bulk deletion: If cleaning up multiple, list them, e.g., `git push origin --delete branch1 branch2`.
+- Alternative via GitHub UI: Go to the repository > Branches tab > Select the branch > Delete (no CLI needed, but CLI is faster for scripting).
+- Always confirm the branch is no longer needed before deleting.
+- Refer to `troubleshooting.md` for permission errors or other issues.
+
 ## Future Additions
-- Branch merging: `git merge` or pull requests.
 - Cherry-picking commits.
 - Undoing changes: `git revert` or `git reset`.
 
