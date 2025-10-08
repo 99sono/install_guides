@@ -120,6 +120,10 @@ You have created a new feature branch locally and want to push it to the remote 
 ### Scenario
 You have multiple small, unpushed commits on your local branch (e.g., from iterative development) and want to consolidate (squash) them into fewer, more meaningful commits before pushing. This cleans up history without losing changes.
 
+There are two main approaches:
+- **Partial squashing**: Target a specific number of recent commits using `HEAD~N`
+- **Complete squashing**: Squash all commits in your feature branch using `main` as the target
+
 ### Prerequisites
 - Commits are unpushed: `git status` shows "Your branch is ahead of 'origin/branch' by N commits."
 - Configure your editor (see "Configuring the Git Editor" above)—Git will open it for editing the commit list and messages.
@@ -170,9 +174,58 @@ You have multiple small, unpushed commits on your local branch (e.g., from itera
    - Git applies the squashed commit. If conflicts, resolve files, `git add`, then `git rebase --continue`.
    - Output example: "Successfully rebased and updated refs/heads/feature/..."
 
+### Steps for Squashing All Commits in a Feature Branch
+
+**Important Safety Note**: This approach should only be used on private feature branches that haven't been pushed or shared with collaborators. Never use this on branches that others are working on, as it rewrites the commit history.
+
+1. **Initiate Interactive Rebase Against Main**:
+   ```
+   git rebase -i main
+   ```
+   - `-i` enables interactive mode
+   - `main` automatically targets all commits ahead of main (no need to specify a number)
+   - Git finds the common ancestor and lists all commits from that point to HEAD
+   - If your branch is 60 commits ahead of main, all 60 commits will appear in the editor
+
+2. **Configure All Commits for Squashing**:
+   - In the editor, keep the **first commit** as `pick`
+   - Change **all other commits** to `squash` (or `s`)
+   - Example for 60 commits:
+     ```
+     pick abc1234 First commit message
+     squash def5678 Second commit message
+     squash ghi9012 Third commit message
+     ... (57 more squash lines)
+     ```
+   - Save and exit the editor
+
+3. **Write the Combined Commit Message**:
+   - Git opens the editor with all commit messages combined
+   - You'll see content like:
+     ```
+     # This is a combination of 60 commits...
+     # The first commit's message is:
+     First commit message
+
+     # This is the 2nd commit message:
+     Second commit message
+
+     # ... (58 more commit messages)
+
+     # Please enter a new message...
+     ```
+   - Write a comprehensive commit message that captures the full feature
+   - Save and exit
+
+4. **Complete the Rebase**:
+   - Git applies all changes into a single commit
+   - If conflicts occur, resolve them, `git add` resolved files, then `git rebase --continue`
+   - Output example: "Successfully rebased and updated refs/heads/feature/..."
+
 ### Verification
-- Check history: `git log --oneline -5` (should show 1 commit instead of 2).
-- Status: `git status` confirms no divergence.
+- Check history: `git log --oneline -5` (should show 1 commit instead of many)
+- Status: `git status` confirms clean working directory
+- Verify against main: `git log --oneline main..HEAD` (should show your single squashed commit)
 
 ### Tips
 - Only rebase unpushed/local commits—rewriting pushed history can cause issues for collaborators.
