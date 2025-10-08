@@ -261,6 +261,64 @@ After a merge request (pull request) is completed and merged into the main branc
 - Always confirm the branch is no longer needed before deleting.
 - Refer to `troubleshooting.md` for permission errors or other issues.
 
+## 6. Generating Patch Files for LLM-Assisted Development
+
+### Scenario
+You've been working on a complex feature branch with multiple commits and want to leverage an LLM to generate a comprehensive summary, merge request description, or commit message that captures the full scope of your development work. Instead of writing these manually or trying to summarize dozens of individual commits, you can generate a single patch file containing all your changes for the LLM to analyze.
+
+### Key Use Cases
+- **Merge Request Descriptions**: Generate detailed markdown explaining all changes across your feature branch for pull request documentation
+- **Commit Messages**: Create comprehensive commit messages that capture the full context of multi-commit development
+- **Development Summaries**: Get LLM assistance understanding complex feature implementations across many commits
+- **Code Review Preparation**: Provide reviewers with a complete picture of all changes in context
+
+### Prerequisites
+- Feature branch with unpushed commits: `git status` shows "Your branch is ahead of 'origin/main' by N commits"
+- Access to an LLM tool or service for analyzing the generated patch
+- Clean working directory (commit or stash any uncommitted changes)
+
+### Steps
+
+1. **Generate a Complete Patch File**:
+   ```bash
+   git diff main...HEAD > feature_branch.patch
+   ```
+   - Compares your current branch (`HEAD`) to `main` using triple-dot syntax
+   - Includes all changes from the merge base up to your current commit
+   - Creates a unified diff file perfect for LLM analysis
+   - Output: Creates `feature_branch.patch` with the complete diff
+
+2. **Generate a Structured Patch with Commit Metadata** (Alternative):
+   ```bash
+   git format-patch main --stdout > feature_branch_detailed.patch
+   ```
+   - Creates a patch stream with commit headers, author, date, and messages
+   - More verbose format that includes commit metadata
+   - Some LLMs can use this structure to better understand development intent and timeline
+   - Useful when you want the LLM to analyze commit patterns and progression
+
+3. **Preview Commits for Context** (Optional):
+   ```bash
+   git log main..HEAD --oneline
+   ```
+   - Shows a quick summary of all commit messages in your branch
+   - Useful for providing additional context to the LLM
+   - Can be included in your prompt along with the patch file
+
+### Verification
+- Check file creation: `ls -la *.patch` (should show your new patch file)
+- Verify file size: `wc -l *.patch` (larger files indicate more comprehensive changes)
+- Quick content check: `head -20 *.patch` (should show diff headers and changed files)
+
+### Tips
+- **File Naming**: Use descriptive names like `feature_java_parser_implementation.patch` to maintain context
+- **LLM Integration**: Feed the patch file directly into your LLM with prompts like "Analyze this git diff and create a comprehensive commit message" or "Generate a merge request description from these changes"
+- **Combining with Squashing**: Use this approach when you want LLM assistance before deciding whether to squash commits (see Section 3)
+- **Large Branches**: For very large patch files, consider if you need the full diff or just recent commits: `git diff main...HEAD~5` for last 5 commits only
+- **Binary Files**: Patch files work best with text-based changes; large binary file changes might need special handling
+
+This approach is particularly valuable for complex features spanning many commits, where manual summarization would be time-consuming and potentially miss important context that an LLM can identify across the entire codebase.
+
 ## Future Additions
 - Cherry-picking commits.
 - Undoing changes: `git revert` or `git reset`.
