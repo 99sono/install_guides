@@ -372,6 +372,53 @@ You've been working on a complex feature branch with multiple commits and want t
 
 This approach is particularly valuable for complex features spanning many commits, where manual summarization would be time-consuming and potentially miss important context that an LLM can identify across the entire codebase.
 
+## 7. Updating Local Main Branch to Remote Without Checkout
+
+### Scenario
+If you're trying to **update your local `main` branch** with the latest changes from the remote `origin/main` **without checking it out**, you can do that using `git fetch` and `git update-ref`. Here's how:
+
+---
+
+### ✅ **Option 1: Fetch and update the local `main` branch directly**
+
+```bash
+git fetch origin main
+git update-ref refs/heads/main origin/main
+```
+
+This will:
+- Fetch the latest `main` from `origin`
+- Force your local `main` branch to point to the same commit as `origin/main`
+- **No checkout required**
+
+> ⚠️ Be careful: this will **overwrite** your local `main` branch pointer. If you have local changes or commits on `main`, they will be lost unless backed up.
+
+---
+
+### ✅ **Option 2: Safer approach using `git fetch` only**
+
+If you just want to **see the latest remote changes** without touching your local branch:
+
+```bash
+git fetch origin
+```
+
+Then you can inspect the remote branch:
+
+```bash
+git log origin/main
+```
+
+Or diff it against your local branch:
+
+```bash
+git diff main origin/main
+```
+
+---
+
+Would you like a script or alias to automate this safely? Or are you working in a CI/CD or repo automation context where this needs to be done programmatically?
+
 ## Future Additions
 - Cherry-picking commits.
 - Undoing changes: `git revert` or `git reset`.
