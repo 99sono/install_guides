@@ -7,6 +7,8 @@ This repository contains **installation guides** for various tools and technolog
 - **aider/**: Guide for installing, configuring, and troubleshooting Aider (an LLM-powered development tool), including integration with Ollama and Docker.
 - **conda_miniforge3/**: Installation and usage of Miniforge3 (Conda) for Python environments, with common commands and troubleshooting.
 - **docker_desktop_wsl2_drive_migration_c_to_d/**: Guide and scripts for migrating Docker Desktop's WSL2 storage from the C: drive to the D: drive on Windows, including backup, purge, verification, and restore steps.
+- **docker-push-to-github/**: Guide for pushing Docker images to GitHub-linked Docker Hub repositories, including tagging strategies and troubleshooting.
+- **git_tips/**: Guide for common Git commands, installation steps, and troubleshooting tips.
 - **heic_to_jpeg/**: Instructions for converting HEIC images to JPEG on WSL2 Ubuntu, including installation, conversion steps, and troubleshooting.
 - **self_signed_certificate/**: Guide for generating and installing self-signed certificates, especially for ASUS routers, with scripts and troubleshooting.
 - **wsl2/**: Documentation for installing, updating, and troubleshooting Windows Subsystem for Linux 2 (WSL2).
