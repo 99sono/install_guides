@@ -189,6 +189,43 @@ To remove the automated setup:
    source ~/.bashrc
    ```
 
+## Important: SSH Agent Environment Variables in Scripts
+
+**Notice**: When using `eval ssh-agent` directly in a bash script, the environment variables configured by the SSH agent program are lost after the script execution completes. This is because environment variables set within a script don't persist outside the script's execution context.
+
+### Solution: Persist SSH Agent Environment Variables
+
+Use this approach to overcome the environment variable issue:
+
+```bash
+#!/bin/bash
+# Script to start SSH agent and add key persistently
+
+# Start SSH agent and save environment variables to a file
+ssh-agent -s > ~/.ssh/agent-env
+
+# Source the environment variables to make them available in the script
+source ~/.ssh/agent-env
+
+# Add the SSH key
+ssh-add ~/.ssh/id_ed25519 2>/dev/null
+
+echo "SSH agent started and key added. To use the agent in your shell, run:"
+echo "source ~/.ssh/agent-env"
+```
+
+This solution:
+1. **Saves environment variables** to a file (`~/.ssh/agent-env`)
+2. **Sources the file** within the script to make variables available
+3. **Provides instructions** for users to manually source the file in their shell if needed
+
+### Alternative: Use the Robust Configuration
+
+The "Alternative Configuration (More Robust)" section above already implements this pattern by:
+- Saving agent environment to `$HOME/.ssh/agent-environment`
+- Sourcing the file to make variables available
+- Checking if the agent is still running before starting a new one
+
 ## Next Steps
 
 After setting up automated login, you should no longer need to manually manage SSH keys. If you encounter issues, refer to the [troubleshooting guide](troubleshooting.md).
