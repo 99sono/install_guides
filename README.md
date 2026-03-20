@@ -4,7 +4,6 @@
 This repository contains **installation guides** for various tools and technologies, providing structured steps and best practices for setting up software efficiently. Each tool has its own dedicated directory, ensuring easy navigation and separation of concerns.
 
 ### Available Guides
-- **aider/**: Guide for installing, configuring, and troubleshooting Aider (an LLM-powered development tool), including integration with Ollama and Docker.
 - **conda_miniforge3/**: Installation and usage of Miniforge3 (Conda) for Python environments, with common commands and troubleshooting.
 - **docker_desktop_wsl2_drive_migration_c_to_d/**: Guide and scripts for migrating Docker Desktop's WSL2 storage from the C: drive to the D: drive on Windows, including backup, purge, verification, and restore steps.
 - **docker-push-to-github/**: Guide for pushing Docker images to GitHub-linked Docker Hub repositories, including tagging strategies and troubleshooting.

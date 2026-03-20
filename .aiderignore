@@ -1,9 +1,0 @@
-# Ignore list for java and maven, nodejs and python development
-"**/node_modules/**"
-"**/venv/**"
-"**/.venv/**"
-"**/target/**"
-"**/*.log"
-"**/.git/**"
-"**/*.tmp"
-"**/.DS_Store"
