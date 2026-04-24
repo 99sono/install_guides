@@ -236,6 +236,15 @@ Add this as a second service in your compose file, or replace the Qwen service:
         max-file: "5"
 ```
 
+See [gemma4 balloons memory & crashes on tensors load #205](https://github.com/eugr/spark-vllm-docker/issues/205)
+
+ ❌ Change this:
+--load-format fastsafetensors
+
+✅ To this (temporary workaround)
+--load-format instanttensor
+
+
 ### 📦 Pre-download the Gemma 4 NVFP4 Model
 ```bash
 huggingface-cli download RedHatAI/gemma-4-26B-A4B-it-NVFP4 \
