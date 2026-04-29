@@ -20,6 +20,9 @@ All installation guides follow the same **organizational structure**, ensuring c
 ### Folder Organization
 Each tool's installation guide is stored in a separate directory inside `install_guides/`, following this example structure:
 
+### Agent Support Directories
+**Note**: The directory `cliCurllToolDump/` is a support folder for agents to dump web research results. It is **not** an installation guide folder.
+
 ```
 install_guides/
 ├── conda_miniforge3/
