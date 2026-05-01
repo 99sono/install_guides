@@ -1,7 +1,12 @@
 # 🚀 OpenCode Setup Guide for Dummies
 
-## Disclaimer - untested
+## Author
+Qwen 3.6 plus.
+
+## Disclaimer (personal) - untested guide
 These notes are not yet verified. My current workflow uses 'cline' via CLI for local development. This guide facilitates experimentation with OpenCode; I’m still deciding if I should try ForgeCode first.
+
+Note: Consider all vll serve calls to be incorrect. Getting a model to be served by vLLM is an art, requires testing, read theam as fillers.
 
 ## Dual-Hardware Local + Cloud Workflow (Windows 11 + WSL2)
 
