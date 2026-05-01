@@ -403,8 +403,8 @@ echo "4. Start coding! Use '/model fast' or '/model einstein' to switch"
 
 | Task Type | Recommended Model | Why |
 |-----------|------------------|-----|
-| Code explanation, quick fixes | `fast` (RTX Gemma4) | Low latency, cheap, good enough |
-| Architecture review, refactoring | `smart` (DGX Qwen3.6) | Better reasoning, larger context |
+| Code explanation, quick fixes | `fast` (RTX Gemma4/nemotron cascade2) | Low latency 3k prefill, local, fits HBRAM, smart.  |
+| Architecture review, refactoring | `smart` (DGX Qwen3.6) | Better reasoning, larger context, slow unified VRAM, slower tokens per second (the DGX 128 GB unified memory is a school bus, not a RTX ferrari) |
 | Novel algorithm design, research | `einstein` (Cloud Claude) | State-of-the-art reasoning |
 | Boilerplate generation, tests | `coder` (Cloud Qwen Coder) | Optimized for code output |
 | Scanning 100+ files for patterns | `brute` (RTX Gemma4) | Local = no API costs, fast ingestion |
@@ -413,4 +413,4 @@ echo "4. Start coding! Use '/model fast' or '/model einstein' to switch"
 
 > 💡 **Final Wisdom**: The OpenAI-compatible API is your true abstraction layer. OpenCode is just a fancy CLI that speaks that language. If OpenCode ever doesn't fit your workflow, you can always drop down to raw `curl` calls to your vLLM endpoints—the config you built today still applies.
 
-Need help tweaking the config for your exact vLLM flags or network topology? Just ask! 🛠️
+
