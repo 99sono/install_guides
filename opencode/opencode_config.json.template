@@ -6,7 +6,6 @@
   "provider": {
 
     "local": {
-      "npm": "@ai-sdk/openai-compatible",
       "name": "Local - Qwen3.6-35B-A3B-NVFP4",
       "options": {
         "baseURL": "http://localhost:8080/v1",
@@ -20,10 +19,6 @@
       }
     }
 
-  },
-
-  "aliases": {
-    "default": "local/qwen3.6-35b-a3b-nvfp4"
   }
 
 }
