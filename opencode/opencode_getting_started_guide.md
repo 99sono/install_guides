@@ -3,6 +3,10 @@
 ## Author
 Qwen 3.6 plus.
 
+## Refences
+
+[penCode Local AI Provider Setup](https://github.com/groxaxo/opencode-local-setup)
+
 ## Disclaimer (personal) - untested guide
 These notes are not yet verified. My current workflow uses 'cline' via CLI for local development. This guide facilitates experimentation with OpenCode; I’m still deciding if I should try ForgeCode first.
 
