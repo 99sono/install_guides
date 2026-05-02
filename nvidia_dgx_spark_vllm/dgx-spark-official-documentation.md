@@ -3,6 +3,10 @@
 ## Official Links
 - [DGX Spark User Guide](https://docs.nvidia.com/dgx/dgx-spark/index.html)
 - [System Recovery Guide](https://docs.nvidia.com/dgx/dgx-spark/system-recovery.html)
+- [Acer Veriton GN100 AI Workstation Getting Started](https://community.acer.com/en/kb/articles/19556-getting-started-with-the-acer-veriton-gn100-ai-workstation)
+
+## Vendor-Specific Documentation Note
+Different vendors of DGX Spark devices may have their own instruction manuals for performing a factory reset. As a reference, Acer provides documentation for their Veriton GN100 AI Workstation [here](https://community.acer.com/en/kb/articles/19556-getting-started-with-the-acer-veriton-gn100-ai-workstation). Always consult the documentation provided by your specific hardware vendor for the most accurate recovery instructions.
 
 ## High-Level Workflow Overview
 
@@ -28,3 +32,4 @@ It tells the hardware to only execute software that is digitally signed and veri
 The final reboots are designed to facilitate a "handshake" between the hardware and your external media. By using the **Boot Override** function, you are telling the system to ignore the internal storage (which may be corrupted or untrusted) and instead hand over control to your trusted USB recovery drive.
 
 **In summary:** The frequent reboots are a deliberate protocol to move the machine through a hierarchy of trust—from a hardware reset, to a security verification, and finally to a controlled execution of the recovery environment.
+
