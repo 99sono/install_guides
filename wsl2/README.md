@@ -8,6 +8,7 @@ Windows Subsystem for Linux 2 (WSL2) enables you to run a full Linux environment
 
 - [Installation and Update Guide](./install_and_update.md)
 - [Troubleshooting Screen Freezes](./troubleshooting_screen_freeze.md)
+- [mDNS Local Network Device Discovery](./wsl2_mdns_local_resolution.md)
 
 ---
 
