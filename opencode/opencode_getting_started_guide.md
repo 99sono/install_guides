@@ -235,3 +235,45 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 ```
 
 The tool-calling test above should return a tool call response — if it returns a 400, go back and check that `--enable-auto-tool-choice` is present.
+
+Illustration:
+```json
+{
+   "id":"chatcmpl-bef4ff67219e6431",
+   "object":"chat.completion",
+   "created":1778106488,
+   "model":"Qwen3.6-35B-A3B-NVFP4",
+   "choices":[
+      {
+         "index":0,
+         "message":{
+            "role":"assistant",
+            "content":null,
+            "refusal":null,
+            "annotations":null,
+            "audio":null,
+            "function_call":null,
+            "tool_calls":[
+               
+            ],
+            "reasoning":"Thinking Process:\n\n1.  **Analyze the Request:** The user asks \"What is 2+2?\".\n2.  **Identify the relevant tool:** I have a function `add(a, b)` that adds two numbers.\n3.  **Determine the arguments:** `a` should be 2, `b` should be 2.\n4.  **Construct the tool call:** `tool_use(default_api=add, arguments={\"a\": 2,"
+         },
+         "logprobs":null,
+         "finish_reason":"length",
+         "stop_reason":null,
+         "token_ids":null
+      }
+   ],
+   "service_tier":null,
+   "system_fingerprint":null,
+   "usage":{
+      "prompt_tokens":283,
+      "total_tokens":383,
+      "completion_tokens":100,
+      "prompt_tokens_details":null
+   },
+   "prompt_logprobs":null,
+   "prompt_token_ids":null,
+   "kv_transfer_params":null
+}
+```
