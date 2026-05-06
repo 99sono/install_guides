@@ -23,8 +23,8 @@ if conda env list | grep -q "^$ENV_NAME "; then
     conda env remove -n "$ENV_NAME" -y
 fi
 
-# Create new environment (Node.js version is left to conda's discretion)
-conda create -n "$ENV_NAME" -y
+# Create new environment with Node.js
+conda create -n "$ENV_NAME" nodejs -y
 
 echo "✅ Environment '$ENV_NAME' created successfully."
 echo ""
