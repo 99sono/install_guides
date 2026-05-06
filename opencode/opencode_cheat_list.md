@@ -17,6 +17,8 @@
 | `/init` | Create/update `OpenCode.md` memory file at project root |
 | `/compact` | Manually trigger session summarization |
 | `/models` | List all available models |
+| `/agent plan` | Switch to plan mode (read-only, chat/analyze) |
+| `/agent build` | Switch to build mode (full access, edit files/run commands) |
 | `/connect` / `/credentials` | Manage provider API keys |
 | `/xxx` (custom) | Created by `.md` files in `~/.config/opencode/commands/` |
 
@@ -65,6 +67,17 @@ Drop `.md` files to create slash commands. Two locations:
 | `<project>/.opencode/commands/` | Project-local only | `project:lint.md` → `/lint` |
 
 The filename (minus `.md`) becomes the command name.
+
+## Agent Mode
+
+Switch between two agent modes:
+
+| Mode | What it does |
+|---|---|
+| `/agent plan` | Read-only mode. Good for analysis, brainstorming, code review |
+| `/agent build` | Full-access mode. Can edit files, run commands, make changes |
+
+The mode is persistent across the session — only reset when you create a new session or switch modes with `/agent`.
 
 ## Session Behavior
 
