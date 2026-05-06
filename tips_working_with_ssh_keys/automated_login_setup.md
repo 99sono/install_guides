@@ -3,103 +3,62 @@
 ## Overview
 This guide shows how to automatically load your SSH keys when starting new terminal sessions in WSL2 Ubuntu, eliminating the need to manually run ssh-agent and ssh-add commands.
 
-## Shell Profile Configuration
+## The Script
 
-### Step 1: Identify Your Shell
-```bash
-echo $SHELL
-```
-
-Common outputs:
-- `/bin/bash` (default in Ubuntu)
-- `/bin/zsh`
-- `/bin/fish`
-
-### Step 2: Edit Your Shell Profile
-
-#### For Bash Users
-Edit `~/.bashrc`:
-```bash
-nano ~/.bashrc
-```
-
-#### For Zsh Users
-Edit `~/.zshrc`:
-```bash
-nano ~/.zshrc
-```
-
-### Step 3: Add SSH Agent Automation
-
-Add the following configuration to your shell profile:
+Save this as `~/.ssh/automated_login.sh` and make it executable:
 
 ```bash
-# SSH Agent Auto-Start and Key Loading
-if [ -z "$SSH_AUTH_SOCK" ]; then
-   # Check if ssh-agent is already running
-   RUNNING_AGENT="$(ps -ax | grep 'ssh-agent -s' | grep -v grep | wc -l | tr -d '[:space:]')"
-   
-   if [ "$RUNNING_AGENT" = "0" ]; then
-        # Launch a new ssh-agent
-        eval "$(ssh-agent -s)"
-   fi
-   
-   # Add your SSH key (adjust path as needed)
-   ssh-add ~/.ssh/id_ed25519 2>/dev/null || ssh-add ~/.ssh/id_rsa 2>/dev/null
-fi
-```
+#!/usr/bin/env bash
+set -euo pipefail
 
-### Step 4: Alternative Configuration (More Robust)
+ENV_FILE="$HOME/.ssh/agent-env"
+KEY_PATH="$HOME/.ssh/id_ed25519"
 
-For better error handling and multiple key support:
+# 1. Clean up stale state
+rm -f "$ENV_FILE"
 
-```bash
-# SSH Agent Configuration with Error Handling
-ssh_env="$HOME/.ssh/agent-environment"
-ssh_add_lock="$HOME/.ssh/agent-lock"
-
-# Function to start ssh-agent
-start_ssh_agent() {
-    echo "Starting SSH agent..."
-    ssh-agent -s > "$ssh_env"
-    chmod 600 "$ssh_env"
-    . "$ssh_env" > /dev/null
-    
-    # Add common SSH keys
-    for key in ~/.ssh/id_ed25519 ~/.ssh/id_rsa ~/.ssh/id_ecdsa; do
-        if [ -f "$key" ]; then
-            echo "Adding SSH key: $key"
-            ssh-add "$key" 2>/dev/null
-        fi
-    done
-}
-
-# Check if agent is already running
-if [ -f "$ssh_env" ]; then
-    . "$ssh_env" > /dev/null
-    ps -p "$SSH_AGENT_PID" > /dev/null 2>&1 || start_ssh_agent
+# 2. Reuse existing agent if it's alive and responsive
+if [ -n "${SSH_AUTH_SOCK:-}" ] && ssh-add -l &>/dev/null; then
+    echo "✓ SSH agent is already running and responsive."
 else
-    start_ssh_agent
+    # Start a new agent
+    eval "$(ssh-agent -s)"
+    # Persist environment variables safely
+    printf 'export SSH_AUTH_SOCK="%s"\nexport SSH_AGENT_PID="%s"\n' \
+        "$SSH_AUTH_SOCK" "$SSH_AGENT_PID" > "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
+    echo "✓ Started new SSH agent."
 fi
+
+# 3. Add key only if not already loaded
+if ssh-add -l 2>/dev/null | grep -qF "$(basename "$KEY_PATH")"; then
+    echo "✓ Key already loaded in agent."
+elif [[ -f "$KEY_PATH" ]]; then
+    ssh-add "$KEY_PATH"
+    echo "✓ Added key: $KEY_PATH"
+else
+    echo "⚠ Warning: Key not found at $KEY_PATH" >&2
+fi
+
+echo ""
+echo "SSH agent started and key added. To use the agent in your shell, or in another terminal, run:"
+echo "  source $ENV_FILE"
 ```
 
-## GNOME Keyring Integration (Optional)
+### Shell Profile Integration
 
-If you're using a desktop environment with GNOME:
+Add to `~/.bashrc` or `~/.zshrc`:
 
-### Check if GNOME Keyring is Available
 ```bash
-ps aux | grep gnome-keyring
+source ~/.ssh/automated_login.sh
 ```
 
-### Enable SSH Key Storage
-```bash
-# Install if not available
-sudo apt update && sudo apt install gnome-keyring
+### How It Works
 
-# Ensure it's running
-echo 'export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"' >> ~/.bashrc
-```
+1. **`rm -f "$ENV_FILE"`** — cleans stale environment file from dead agents
+2. **`ssh-add -l`** — checks the agent is actually alive and responsive (not just a stale PID)
+3. **Key check** — only adds the key if it's not already loaded (idempotent)
+4. **Graceful fallback** — warns if the key file is missing instead of hard-failing
 
 ## Testing Your Setup
 
@@ -124,108 +83,23 @@ cd /path/to/your/repo
 git fetch origin
 ```
 
-## Customization Options
+## Troubleshooting
 
-### Multiple Keys
-Modify the configuration to add multiple keys:
-
+### Issue: Passphrase Prompt on Every Terminal
+The agent is not being reused — likely the `ssh-add -l` check is failing. Verify the existing agent check works:
 ```bash
-# Add multiple keys
-ssh-add ~/.ssh/id_ed25519
-ssh-add ~/.ssh/id_rsa_github
-ssh-add ~/.ssh/id_rsa_gitlab
-```
-
-### Different Key Locations
-If your keys are in non-standard locations:
-
-```bash
-ssh-add /custom/path/to/your/key
-```
-
-### Conditional Loading
-Only load keys for specific directories:
-
-```bash
-# Only load keys when in a git repository
-if git rev-parse --git-dir > /dev/null 2>&1; then
-    ssh-add ~/.ssh/id_ed25519
-fi
-```
-
-## Troubleshooting Automated Setup
-
-### Issue: Keys Not Loading Automatically
-**Solution**: Check if your shell profile is being sourced:
-```bash
-echo "SSH agent debug"  # Add this to your .bashrc to test
+ssh-add -l 2>/dev/null && echo "agent responsive" || echo "agent not responsive"
 ```
 
 ### Issue: Multiple SSH Agents
-**Solution**: Use the more robust configuration above to prevent duplicate agents
+The `rm -f "$ENV_FILE"` cleanup and `ssh-add -l` gate prevent duplicate agents. If this still occurs, ensure you're not sourcing the agent start multiple times.
 
-### Issue: Passphrase Prompt on Every Terminal
-**Solution**: Ensure the lock file mechanism is working or use the simpler configuration
+### Issue: "Too many authentication failures"
+The script adds the key conditionally on each shell startup (`ssh-add -l | grep -qF`), so re-adding is prevented. If you have additional keys, add them in the script once below the existing key section.
 
 ## Security Considerations
 
-- **Session-based**: Keys are loaded when you open a new terminal
-- **User-specific**: Only affects your user account
-- **Memory-only**: Keys are not persisted to disk
-- **Automatic cleanup**: Keys are removed when you close all terminals
-
-## Reverting Changes
-
-To remove the automated setup:
-
-1. Edit your shell profile:
-   ```bash
-   nano ~/.bashrc
-   ```
-
-2. Remove the SSH agent configuration you added
-3. Reload your shell:
-   ```bash
-   source ~/.bashrc
-   ```
-
-## Important: SSH Agent Environment Variables in Scripts
-
-**Notice**: When using `eval ssh-agent` directly in a bash script, the environment variables configured by the SSH agent program are lost after the script execution completes. This is because environment variables set within a script don't persist outside the script's execution context.
-
-### Solution: Persist SSH Agent Environment Variables
-
-Use this approach to overcome the environment variable issue:
-
-```bash
-#!/bin/bash
-# Script to start SSH agent and add key persistently
-
-# Start SSH agent and save environment variables to a file
-ssh-agent -s > ~/.ssh/agent-env
-
-# Source the environment variables to make them available in the script
-source ~/.ssh/agent-env
-
-# Add the SSH key
-ssh-add ~/.ssh/id_ed25519 2>/dev/null
-
-echo "SSH agent started and key added. To use the agent in your shell, run:"
-echo "source ~/.ssh/agent-env"
-```
-
-This solution:
-1. **Saves environment variables** to a file (`~/.ssh/agent-env`)
-2. **Sources the file** within the script to make variables available
-3. **Provides instructions** for users to manually source the file in their shell if needed
-
-### Alternative: Use the Robust Configuration
-
-The "Alternative Configuration (More Robust)" section above already implements this pattern by:
-- Saving agent environment to `$HOME/.ssh/agent-environment`
-- Sourcing the file to make variables available
-- Checking if the agent is still running before starting a new one
-
-## Next Steps
-
-After setting up automated login, you should no longer need to manually manage SSH keys. If you encounter issues, refer to the [troubleshooting guide](troubleshooting.md).
+- **Memory-only**: Keys reside in the SSH agent's memory, not on disk
+- **Stale cleanup**: `rm -f "$ENV_FILE"` prevents connecting to dead agents
+- **Environment file**: `chmod 600` on the env file — only readable by you
+- **Source required**: External terminals must `source $ENV_FILE` to use the agent
