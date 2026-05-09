@@ -1,316 +1,269 @@
-# HTTPS with vLLM via nginx Reverse Proxy (Docker Compose)
+# HTTPS via Nginx Reverse Proxy with vLLM (Self‑Signed Certificate)
+Author: Deepseek-v4-flash
 
-> ⚠️ **Disclaimer:** This guide is **untested and unverified**. It is provided for informational purposes only. Use at your own risk and validate all configurations in your environment before production deployment.
+This guide sets up an Nginx reverse proxy to add HTTPS in front of an already running vLLM container.
+The proxy handles SSL termination, request buffering (disabled for streaming), and security hardening.
 
----
+Key features:
 
-**Author:** Qwen 3.6 35B MoE (Mixture of Experts)
-
----
-
-## Overview
-
-This guide shows how to run your vLLM openAI-compatible API behind an nginx reverse proxy with a self-signed SSL certificate — all managed via Docker Compose. The certificate is also installed into the Ubuntu CA trust store so the OS and browsers won't complain.
-
----
-
-## Prerequisites
-
-- DGX Spark (ARM64) running Ubuntu
-- Docker & Docker Compose installed
-- vLLM container running on localhost:8000 (see existing `vllm/qwen-3.6-35b-a3b-vllm-nvpf4-dgx-spark/`)
+· Self‑signed certificate (clients must install it explicitly)
+· No port exposure on vLLM – all traffic goes through Nginx
+· Streaming support (proxy_buffering off)
+· Blocks the vulnerable /invocations endpoint (CVE-2026-22778 mitigation)
 
 ---
 
-## Step 1 — Create the nginx reverse-proxy stack
+Prerequisites
 
-Create a new directory for the proxy configuration:
+· A running vLLM container on a custom Docker network, without publishing its port to the host.
+  Example vLLM start command (adjust model, API key, etc.):
+  ```bash
+  docker run -d --name vllm \
+    --network my_network \
+    vllm/vllm-openai:latest \
+    --model meta-llama/Llama-2-7b-chat-hf \
+    --api-key your-secret-key
+  ```
+  ⚠️ Do not add -p 8000:8000 – this would bypass the proxy.
+· Docker and Docker Compose installed on the same host (the DGX machine).
+· A domain name or IP address that clients will use (e.g., dgx.example.com or 10.0.0.5).
+
+---
+
+Step 1: Create Project Directory
 
 ```bash
-mkdir -p nginx-proxy/ssl
+mkdir nginx-proxy && cd nginx-proxy
 ```
 
-### docker-compose.yml
+---
 
-```yaml
-version: "3.9"
+Step 2: Generate Self‑Signed Certificate
 
-services:
-  nginx:
-    image: nginx:1.30-alpine
-    container_name: vllm-nginx-proxy
-    platform: linux/arm64/v8
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
-      - ./ssl/private.key:/etc/nginx/ssl/private.key:ro
-    depends_on:
-      - vllm
-    restart: unless-stopped
-    networks:
-      - development-network
+Create a script to generate the certificate and private key:
 
-  vllm:
-    container_name: qwen3-6-moe-35b-a3b-nvfp4
-    # This references your existing vLLM container running on the development-network.
-    # The vLLM container should already be running with its full configuration
-    # (see your bare vLLM docker-compose for the full command definition).
-    # No ports exposed here — nginx forwards all traffic.
-    networks:
-      - development-network
-
-networks:
-  development-network:
-    external: true
+```bash
+# generate_cert.sh
+#!/bin/bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout nginx-selfsigned.key \
+  -out nginx-selfsigned.crt \
+  -subj "/CN=your-hostname-or-ip"
 ```
 
-### nginx.conf
+Make it executable and run:
+
+```bash
+chmod +x generate_cert.sh
+./generate_cert.sh
+```
+
+Replace your-hostname-or-ip with the exact name/IP clients will use (e.g., dgx-01, 10.0.0.5). Mismatches cause certificate warnings.
+
+---
+
+Step 3: Create Nginx Configuration
+
+Create nginx.conf:
 
 ```nginx
-daemon off;
-worker_processes auto;
-error_log /dev/stderr warn;
-pid /var/run/nginx.pid;
-
 events {
     worker_connections 1024;
 }
 
 http {
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-
-    # Logging
-    log_format main '$remote_addr - $remote_user [$time_local] '
-                    '"$request" $status $body_bytes_sent '
-                    '"$http_referer" "$http_user_agent"';
-    access_log /dev/stdout main;
-
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
+    # Disable request/response buffering for streaming
+    proxy_buffering off;
+    proxy_request_buffering off;
 
     server {
-
-        # ---- TLS ----
         listen 443 ssl;
-        server_name localhost;
+        server_name _;  # Accept any hostname (use _ or your IP/domain)
 
-        ssl_certificate      /etc/nginx/ssl/cert.pem;
-        ssl_certificate_key  /etc/nginx/ssl/private.key;
-        ssl_protocols        TLSv1.2 TLSv1.3;
-        ssl_ciphers          HIGH:!aNULL:!MD5;
+        ssl_certificate     /etc/nginx/ssl/nginx-selfsigned.crt;
+        ssl_certificate_key /etc/nginx/ssl/nginx-selfsigned.key;
 
-        # Timeouts — vLLM long-running requests need generous values
-        proxy_connect_timeout 300s;
-        proxy_send_timeout    300s;
-        proxy_read_timeout    300s;
+        # Security hardening (optional)
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
 
-        # Large request bodies for big prompts
-        client_max_body_size 64m;
-        proxy_body_size 64m;
-
-        # Block unauthenticated /invocations endpoint (CVE-2026-22778)
-        location /invocations {
-            return 403 '{"error": "Access denied"}';
-            add_header Content-Type application/json;
+        # Block the vulnerable /invocations endpoint
+        location = /invocations {
+            return 403;
         }
 
-        # Allow /v1 and /models routes only
-        location ~ ^/(v1|models) {
+        # Proxy everything else to vLLM
+        location / {
             proxy_pass http://vllm:8000;
-
-            # Forward client info
-            proxy_set_header Host           $host;
-            proxy_set_header X-Real-IP      $remote_addr;
+            proxy_set_header Host $proxy_host;   # Send internal container name
+            proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-
-            # Streaming / SSE for token-by-token output
-            proxy_http_version 1.1;
-            proxy_set_header Connection "";
-            proxy_set_header Upgrade    $http_upgrade;
-
-            # Disable request buffering for large prompt uploads
-            proxy_request_buffering off;
-
-            # Chunked response passthrough for streaming
-            proxy_buffering off;
-            proxy_cache off;
         }
-
-        # Health-check endpoint
-        location /health {
-            proxy_pass http://vllm:8000/health;
-        }
-
-        # Deny everything else
-        location / {
-            return 404 '{"error": "Not found"}';
-        }
-    }
-
-    # Redirect HTTP → HTTPS
-    server {
-        listen 80;
-        server_name localhost;
-        return 301 https://$host$request_uri;
     }
 }
 ```
 
-### Generate the self-signed certificate
+Key points:
 
-> **Note:** Replace `[DGX_IP]` with your DGX Spark's actual static IP address (e.g., `10.0.0.50`). This placeholder must be substituted before running the command.
+· server_name _ – matches any incoming Host header
+· proxy_set_header Host $proxy_host – forwards the upstream name (vllm), avoiding host mismatch
+· Streaming buffers are disabled globally inside http block
 
-Run this **once** at the project root:
+---
 
-```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout nginx-proxy/ssl/private.key \
-  -out nginx-proxy/ssl/cert.pem \
-  -subj "/C=US/ST=California/L=Santa Clara/O=NVIDIA Spark/CN=localhost" \
-  -addext "subjectAltName = DNS:localhost, IP:127.0.0.1, IP:[DGX_IP]"
+Step 4: Create Docker Compose File (Proxy Only)
+
+Create docker-compose.yml:
+
+```yaml
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx-selfsigned.crt:/etc/nginx/ssl/nginx-selfsigned.crt:ro
+      - ./nginx-selfsigned.key:/etc/nginx/ssl/nginx-selfsigned.key:ro
+    networks:
+      - my_network   # Must match the network your vLLM container uses
+
+networks:
+  my_network:
+    external: true
 ```
 
-> **Why `ca.crt` is not generated:** In a self-signed setup, `cert.pem` acts as both the server certificate and the CA certificate. The `ca.crt` file is not needed — nginx only requires `ssl_certificate` (cert.pem) and `ssl_certificate_key` (private.key) to establish HTTPS.
+The network my_network must already exist and both containers must be attached to it.
+Create it if missing: docker network create my_network
 
-This produces:
-- `nginx-proxy/ssl/cert.pem` — the public certificate
-- `nginx-proxy/ssl/private.key` — the private key
+---
 
-### Install the cert in Ubuntu's CA trust store
-
-Also once, at the project root:
+Step 5: Start the Proxy
 
 ```bash
-sudo cp nginx-proxy/ssl/cert.pem /usr/local/share/ca-certificates/vllm-selfsigned.crt
+docker-compose up -d
+```
+
+Verify it's running:
+
+```bash
+docker-compose logs nginx
+curl -k https://localhost/health   # Should reach vLLM's health endpoint
+```
+
+---
+
+Step 6: Client‑Side Certificate Installation (Self‑Signed)
+
+Every client that needs to access the vLLM API must trust your self‑signed certificate.
+
+On Linux (Ubuntu/Debian)
+
+```bash
+# Copy the .crt file to the client machine
+sudo cp nginx-selfsigned.crt /usr/local/share/ca-certificates/nginx.crt
 sudo update-ca-certificates
 ```
 
-After this, Ubuntu (and browsers) trust `https://localhost:443` without warnings.
-
----
-
-## .env file
-
-Copy the `.env.example` from your vLLM directory and add the `VLLM_API_KEY`:
+On macOS
 
 ```bash
-cp vllm/qwen-3.6-35b-a3b-vllm-nvpf4-dgx-spark/.env.example .env
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain nginx-selfsigned.crt
 ```
 
-Then edit `.env` and set a real API key (or keep `dummy-key`).
+On Windows
 
----
+1. Double‑click the .crt file
+2. Click Install Certificate
+3. Choose Local Machine → Place all certificates in the following store → Trusted Root Certification Authorities
+4. Finish
 
-## Step 2 — Run everything
+Python / requests
 
-> **Architecture note:** This guide adds an nginx reverse-proxy layer on top of your **existing bare vLLM container**. Your DGX Spark already runs vLLM directly on port 8000 (HTTP). The docker-compose.yml below replaces that direct port exposure — the nginx proxy now handles all external HTTPS traffic and forwards internal HTTP requests to the vLLM container on the shared Docker network.
+If you can’t install system‑wide, point to the cert file explicitly:
 
-From the **project root**:
-
-```bash
-docker compose --project-name vllm-https up -d --wait
-```
-
-This starts both the vLLM container and the nginx reverse proxy container on the same Docker network.
-
----
-
-## Step 3 — Verify
-
-```bash
-# Check both containers are running
-docker compose ps
-
-# Check nginx is listening on 443 (uses -k to bypass untrusted cert until CA install)
-curl -k https://localhost:443/v1/models
-
-# Trust the cert (after update-ca-certificates) — no -k needed
-curl https://localhost/v1/models
-```
-
-### Troubleshooting: Certificate verification
-
-If `curl` still complains about the certificate immediately after `update-ca-certificates`:
-
-```bash
-# Option A: Verify the pipe works with explicit CA cert
-curl --cacert nginx-proxy/ssl/cert.pem https://localhost/v1/models
-
-# Option B: Restart your terminal session to pick up the updated CA trust store
-```
-
-The `--cacert` flag is useful to confirm the TLS handshake works before relying on the OS trust store.
-
-### Troubleshooting: Route 404 errors
-
-If you get `404 Not found` when hitting the API, ensure you're using the correct path. The nginx config only allows:
-
-| Allowed Route  | Description                  |
-|---------------|------------------------------|
-| `/v1/...`     | OpenAI-compatible API        |
-| `/models`     | Model listing                |
-| `/health`     | Health check                 |
-| `/invocations` | **Blocked** (403 Forbidden)  |
-
-Any other path (e.g., `/v1/chat/completions` works under `/v1/`, but `/chat/completions` does not) will return a 404.
-
-### Test a chat completion
-
-```bash
-curl -s https://localhost/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${VLLM_API_KEY:-dummy-key}" \
-  -d '{
-    "model": "Qwen3.6-35B-A3B-NVFP4",
-    "messages": [{"role": "user", "content": "Say hello in one sentence."}]
-  }'
+```python
+import requests
+response = requests.post(
+    "https://your-host/v1/completions",
+    headers={"Authorization": "Bearer your-api-key"},
+    json={"prompt": "Hello", "max_tokens": 10},
+    verify="/path/to/nginx-selfsigned.crt"
+)
 ```
 
 ---
 
-## Step 4 — Stop everything
+Security & Operational Notes
 
-```bash
-docker compose --project-name vllm-https down
-```
-
----
-
-## Directory structure
-
-```
-DockerBuildFiles/
-├── .env
-├── docker-compose.yml          # nginx + vLLM composite
-├── nginx.conf
-├── nginx-proxy/
-│   ├── ssl/
-│   │   ├── cert.pem
-│   │   └── private.key
-│   └── README.md
-└── vllm/
-    └── qwen-3.6-35b-a3b-vllm-nvpf4-dgx-spark/
-        └── (original files, untouched)
-```
+· vLLM API key – Ensure vLLM is started with --api-key. The proxy does not add authentication; clients must include the key in the Authorization header.
+· .gitignore – If you version this directory, add .env and *.key to your .gitignore to avoid leaking secrets.
+  ```
+  # .gitignore
+  .env
+  *.key
+  nginx-selfsigned.crt   # optional, but cert is not secret
+  ```
+· Firewall: Only expose port 443 (HTTPS) to clients. Block port 8000 (vLLM’s internal port) completely.
+· Health check – The /health endpoint only confirms vLLM is running, not that a model is loaded. For production, implement a deeper readiness probe.
 
 ---
 
-## Key differences from bare vLLM
+Appendix: Using Let’s Encrypt (free, trusted certificates)
 
-| Aspect          | Bare vLLM                  | With nginx reverse proxy        |
-|-----------------|---------------------------|---------------------------------|
-| Port            | `8000` (HTTP)             | `443` (HTTPS)                   |
-| Certificate     | None                      | Self-signed (or ACME/Let's Encrypt) |
-| Client trust    | Always needs `-k`         | Trusts after CA install         |
-| Streaming       | Works                     | Works (`proxy_buffering off`)   |
-| URL             | `http://localhost:8000`   | `https://localhost`             |
+Advantages over self‑signed
 
-## Optional: get a real certificate
+· Automatically trusted by all major browsers and operating systems – no manual installation on clients.
+· Automatic renewal (Certbot).
+· No security warnings.
 
-Replace the self-signed cert with a Let's Encrypt cert using the nginx-proxy docker image `nginx/nginx:latest` + [`nginx-letsencrypt`](https://github.com/directust/nginx-letsencrypt) or [`linuxserver/swag`](https://github.com/linuxserver/docker-swag). The nginx.conf structure remains nearly identical — just mount the certificate files instead of generating them locally.
+Prerequisites
+
+· A public domain name pointing to your DGX machine’s IP address.
+· Port 80 (HTTP) reachable from the internet for the initial certificate challenge.
+
+Example Certbot + Nginx Setup
+
+1. Stop your self‑signed proxy (if running):
+   ```bash
+   docker-compose down
+   ```
+2. Run Certbot using the nginx image with a temporary config:
+   ```bash
+   docker run -it --rm -p 80:80 -p 443:443 \
+     -v ./nginx-letsencrypt.conf:/etc/nginx/nginx.conf:ro \
+     -v ./certbot-etc:/etc/letsencrypt \
+     certbot/certbot certonly --standalone -d your-domain.com --email you@example.com --agree-tos
+   ```
+3. Update your nginx.conf to use the obtained certificate:
+   ```nginx
+   ssl_certificate     /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+   ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+   ```
+4. Mount the certs in docker-compose.yml:
+   ```yaml
+   volumes:
+     - ./certbot-etc:/etc/letsencrypt:ro
+   ```
+5. Set up automatic renewal (cron or systemd timer) once a month.
+
+Important: Let’s Encrypt requires a real domain
+
+If you are on an internal network without a public domain, self‑signed remains the only practical option.
+
+---
+
+Troubleshooting
+
+Symptom Likely cause Solution
+502 Bad Gateway Nginx cannot reach vLLM Check that both containers are on the same Docker network and vLLM is running.
+SSL errors (client side) Certificate not trusted Install the self‑signed cert on the client as shown in Step 6.
+Streaming hangs Buffering re‑enabled Ensure proxy_buffering off; is present in the http block.
+Host header mismatch vLLM expects a specific host Use proxy_set_header Host $proxy_host; (already in the config).
+
+---
+
+
+This guide gives you a secure, streaming‑ready HTTPS endpoint for vLLM using a self‑signed certificate. For production environments accessible via a public domain, migrate to Let’s Encrypt using the appendix.
