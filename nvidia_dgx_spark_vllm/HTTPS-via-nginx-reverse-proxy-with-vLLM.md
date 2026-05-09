@@ -46,16 +46,26 @@ mkdir nginx-proxy && cd nginx-proxy
 
 ### 4.1 Create the Certificate Script
 
-Create a script to generate the certificate and private key:
+Create a script to generate the certificate and private key with Subject Alternative Name (SAN) extension for browser trust compatibility:
 
 ```bash
 # generate_cert.sh
 #!/bin/bash
+
+# Replace these values with your DGX server details
+DGX_HOSTNAME="spark"
+SSL_IP_ADDRESS="10.0.0.5"
+
+mkdir -p ssl
+
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout nginx-selfsigned.key \
-  -out nginx-selfsigned.crt \
-  -subj "/CN=your-hostname-or-ip"
+  -keyout ssl/nginx-selfsigned.key \
+  -out ssl/nginx-selfsigned.crt \
+  -subj "/CN=$DGX_HOSTNAME" \
+  -addext "subjectAltName = DNS:$DGX_HOSTNAME, DNS:localhost, IP:$SSL_IP_ADDRESS"
 ```
+
+> ⚠️ **Important:** The SAN extension is required for browser trust compatibility (Chrome 58+, Edge, and modern Firefox). Without it, browsers will show SSL errors even after installing the certificate.
 
 ### 4.2 Make It Executable and Run
 
@@ -64,7 +74,7 @@ chmod +x generate_cert.sh
 ./generate_cert.sh
 ```
 
-> 💡 **Tip:** Replace `your-hostname-or-ip` with the exact name/IP clients will use (e.g., `dgx-01`, `10.0.0.5`). Mismatches cause certificate warnings.
+> 💡 **Tip:** Set `DGX_HOSTNAME` to your DGX server's hostname and `SSL_IP_ADDRESS` to your local network IP (e.g., `10.0.0.5`). The SAN will include: DNS:hostname, DNS:localhost, and IP:address.
 
 ---
 
