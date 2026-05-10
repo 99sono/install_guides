@@ -1,35 +1,49 @@
 # Git Tips
 
 ## Introduction
-This directory provides practical tips and examples for common Git workflows, focusing on branch management, collaboration, and everyday commands. It assumes a basic Git installation and a remote repository setup (e.g., on GitHub). These tips are tailored for developers working in Unix-like environments such as WSL2/Ubuntu.
 
-The goal is to streamline Git usage for tasks like creating branches, pushing changes, and resolving common issues, making collaboration smoother.
+This directory provides practical tips and examples for common Git workflows, focusing on local development, multi-agent workflows, and release branching strategies.
 
-### Covered Topics
-- **Editor Configuration**: Setting up nano, vi, or VSCode as Git's interactive editor, with tips and testing.
-- **Branch Creation and Pushing**: How to create a local branch and set it up to track a remote branch.
-- **Pulling Remote Branches Locally**: Fetching and checking out remote branches for collaboration.
-- **Common Commands**: Step-by-step examples for frequent Git operations.
-- **Rebasing and Commit Squashing**: Using interactive rebase to consolidate unpushed commits.
-- **Installation/Setup**: Basic Git installation if needed (cross-references to WSL2 guide).
-- **Troubleshooting**: Fixes for typical errors like push rejections or upstream issues.
+## Workflow Guides
+
+- **Squashing commits before push** → `squashing_commits.md`. Pre-push checklist with scripts + interactive rebase deep dive.
+- **Branching workflow** → `branching_workflow.md`. Create, push, pull, and clean up branches.
+- **Git worktrees** → `git_worktrees.md`. Multi-branch and multi-agent workflows without cloning.
+- **Merge request with LLM** → `patch_for_llm.md`. Generate MR descriptions from patch files.
+- **Revert a specific file from a commit** → `revert_file_changes.md`.
+
+## Editor & Configuration
+
+- **Interactive editor** → `interactive_editor_config.md`. Configure nano, vim, or VSCode for Git editors.
+- **Installation** → `installation.md`. Basic Git setup.
+
+## Troubleshooting
+
+- **Troubleshooting** → `troubleshooting.md`. Common errors: push rejections, auth, upstream, pathspec.
+
+## Quick Reference
+
+- **Common commands** → `common_commands.md`. Everyday Git commands.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `squashing_commits.md` | Pre-push checklist + squashing guide |
+| `branching_workflow.md` | Create/push/pull branches |
+| `git_worktrees.md` | Multi-branch and multi-agent workflows |
+| `patch_for_llm.md` | GitLab MR description generation with LLMs |
+| `revert_file_changes.md` | Reverting specific file changes |
+| `interactive_editor_config.md` | Configuring nano, vim, or VSCode for Git |
+| `installation.md` | Basic Git installation |
+| `troubleshooting.md` | Common errors and fixes |
+| `common_commands.md` | Quick reference |
+
+## Quick Example: Pushing a New Branch
+
+```bash
+git checkout -b feature/my-feature
+git push --set-upstream origin feature/my-feature
+```
 
 For more on Git fundamentals, refer to the official [Git documentation](https://git-scm.com/docs).
-
-### Quick Example: Pushing a New Branch
-Assuming you've created a local branch with `git branch feature/99sono_java_parser_start_implementation`:
-
-```
-git push --set-upstream origin feature/99sono_java_parser_start_implementation
-```
-
-This command pushes the branch to the remote (`origin`) and sets the upstream tracking, allowing future `git push` and `git pull` without extra flags.
-
-## Repository Consistency
-This guide follows the standard structure of the install_guides repository:
-- `README.md`: Overview and quick starts.
-- `common_commands.md`: Detailed command examples.
-- `installation_steps.md`: Setup instructions.
-- `troubleshooting.md`: Common issues and solutions.
-
-Contribute more tips by adding examples or expanding sections!
