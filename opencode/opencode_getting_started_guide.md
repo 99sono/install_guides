@@ -135,7 +135,9 @@ mkdir -p ~/.config/opencode
 nano ~/.config/opencode/opencode.json
 ```
 
-Paste this single-provider config:
+### Option A: Single Provider (Local Only)
+
+If you only run a local LLM, use a single-provider config:
 
 ```json
 {
@@ -146,15 +148,60 @@ Paste this single-provider config:
   "provider": {
 
     "local": {
-      "name": "Qwen3.6-35B-A3B-NVFP4",
+      "name": "Qwen3.6-35B-A3B-NVFP4 (Local RTX 5090)",
       "options": {
-        "baseURL": "http://localhost:8000/v1",
-        "apiKey": "EMPTY"
+        "baseURL": "https://localhost:8443/v1",
+        "apiKey": "YOUR_API_KEY_HERE"
       },
       "models": {
         "Qwen3.6-35B-A3B-NVFP4": {
           "name": "Qwen3.6-35B-A3B-NVFP4",
-          "limit": { "context": 65536, "output": 8192 }
+          "limit": { "context": 64000, "output": 8192 }
+        }
+      }
+    }
+
+  }
+
+}
+```
+
+### Option B: Dual Providers (Local + Remote DGX Spark)
+
+For users with both a local GPU and access to a remote DGX Spark cluster, you can configure both endpoints and switch between them using the `/models` command inside OpenCode:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "model": "local/Qwen3.6-35B-A3B-NVFP4",
+
+  "provider": {
+
+    "local": {
+      "name": "Qwen3.6-35B-A3B-NVFP4 (Local RTX 5090)",
+      "options": {
+        "baseURL": "https://localhost:8443/v1",
+        "apiKey": "YOUR_API_KEY_HERE"
+      },
+      "models": {
+        "Qwen3.6-35B-A3B-NVFP4": {
+          "name": "Qwen3.6-35B-A3B-NVFP4",
+          "limit": { "context": 64000, "output": 8192 }
+        }
+      }
+    },
+
+    "dgx-spark": {
+      "name": "Qwen3.6-35B-A3B-NVFP4 (DGX Spark Remote)",
+      "options": {
+        "baseURL": "https://dgx-spark-hostname:8443/v1",
+        "apiKey": "YOUR_API_KEY_HERE"
+      },
+      "models": {
+        "Qwen3.6-35B-A3B-NVFP4": {
+          "name": "Qwen3.6-35B-A3B-NVFP4",
+          "limit": { "context": 262144, "output": 32768 }
         }
       }
     }
@@ -165,10 +212,11 @@ Paste this single-provider config:
 ```
 
 Key points:
-- `"model"` uses the `provider/model` format: `local/Qwen3.6-35B-A3B-NVFP4`
+- `"model"` uses the `provider/model` format: `local/Qwen3.6-35B-A3B-NVFP4` (the default model used at startup)
 - The key under `"models"` (`Qwen3.6-35B-A3B-NVFP4`) must **exactly match** what vLLM reports from `/v1/models`
-- `"limit.context"` and `"limit.output"` help OpenCode manage prompt length
-- `"apiKey": "EMPTY"` is the standard for local endpoints with no auth
+- `"limit.context"` and `"limit.output"` help OpenCode manage prompt length — adjust based on your endpoint's capabilities
+- Replace `YOUR_API_KEY_HERE` with your actual API key (or use `EMPTY` for unauthenticated endpoints)
+- Replace `dgx-spark-hostname` with the actual hostname or IP of your DGX Spark instance
 
 ---
 
@@ -179,7 +227,17 @@ cd your-project-directory
 opencode
 ```
 
-Inside the TUI, use `/models` to list available models. With only one model configured, there's nothing to switch — OpenCode will use the one you configured.
+Inside the TUI, use `/models` to list available models. With only one model configured, there's nothing to switch — OpenCode will use the one you configured. With multiple models configured, you can switch between your local and remote endpoints.
+
+---
+
+## Running Local LLMs Behind an HTTPS Reverse Proxy
+
+For local LLMs, it is recommended to run vLLM behind an nginx reverse proxy with HTTPS. This adds encryption for local network communication and is not much effort since you only need a self-signed certificate.
+
+To set up an nginx reverse proxy for your local vLLM endpoint, see: [HTTPS via nginx Reverse Proxy with vLLM](../nvidia_dgx_spark_vllm/HTTPS-via-nginx-reverse-proxy-with-vLLM.md)
+
+Once configured, your local endpoint will be available at `https://localhost:8443/v1` instead of `http://localhost:8000/v1`, and you can use the HTTPS configurations shown above.
 
 ---
 
@@ -188,11 +246,13 @@ Inside the TUI, use `/models` to list available models. With only one model conf
 | Issue | Solution |
 |-------|----------|
 | `Connection refused` to localhost:8000 | Verify vLLM is running: `curl http://localhost:8000/v1/models` |
+| `Connection refused` to localhost:8443 | If using nginx HTTPS proxy, verify nginx is running: `systemctl status nginx` |
 | Model not listing in `/models` | Check the model key in the config matches vLLM's `/v1/models` output exactly |
 | HTTP 400 Bad Request | You are missing `--enable-auto-tool-choice` in your vLLM command. OpenCode sends `tool_choice="auto"` by default. Cline does not, which is why Cline worked without this flag. |
 | Tool-calling not working | Ensure both `--tool-call-parser qwen3_coder` and `--enable-auto-tool-choice` are in the vLLM args |
 | Slow responses | Check GPU memory with `nvidia-smi`; reduce `--max-model-len` if VRAM is full |
 | Token limit errors | Verify `"limit": {"context": 65536, "output": 8192"` matches your vLLM `--max-model-len` and `--max-num-batched-tokens`/output settings |
+| SSL/TLS errors with HTTPS endpoint | If using self-signed certificates, you may need to add `NODE_TLS_REJECT_UNAUTHORIZED=0` or install the certificate in your trust store |
 
 ---
 
