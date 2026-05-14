@@ -1,5 +1,7 @@
 # Installing Miniforge3
 
+**This guide works on both x86_64 and ARM64 architectures.** The installation commands use `uname` to auto-detect your platform, so no modifications are needed — it works out-of-the-box on machines like the **NVIDIA DGX Spark** (ARM64), laptops, and servers.
+
 This guide provides step-by-step instructions for installing Miniforge3 on Ubuntu (WSL2).
 
 ## Prerequisites
