@@ -227,11 +227,18 @@ cd your-project-directory
 opencode
 ```
 
+## Step 4: Start OpenCode
+...
 Inside the TUI, use `/models` to list available models. With only one model configured, there's nothing to switch — OpenCode will use the one you configured. With multiple models configured, you can switch between your local and remote endpoints.
 
 ---
 
-## Running Local LLMs Behind an HTTPS Reverse Proxy
+## Next Steps
+
+- **Master the CLI**: Explore the [Cheat Sheet](./06_cheat_list.md) for all commands and shortcuts.
+- **Unlock Capabilities**: Check out the [Skills Guide](./05_skills_guide.md) to learn how to extend OpenCode.
+- **Troubleshooting**: See the troubleshooting table in this guide.
+
 
 For local LLMs, it is recommended to run vLLM behind an nginx reverse proxy with HTTPS. This adds encryption for local network communication and is not much effort since you only need a self-signed certificate.
 

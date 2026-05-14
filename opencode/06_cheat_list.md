@@ -23,6 +23,8 @@
 | `/rename` | Give a name to the current session |
 | `/sessions` | List active sessions and switch between them |
 | `/xxx` (custom) | Created by `.md` files in `~/.config/opencode/commands/` |
+| **Skills** | **See [05_skills_guide.md](./05_skills_guide.md)** |
+
 
 ## Keyboard Shortcuts
 
