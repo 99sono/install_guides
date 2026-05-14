@@ -20,6 +20,30 @@ If you already have a conda environment configured with all the packages and dep
 
 #### Method 1: `conda create --clone` (Recommended for local cloning)
 
+#### 🔄 Renaming an Environment
+
+Conda does **not** have a built-in `rename` command. To rename an environment, the standard approach is to **clone** it with the new name and then **delete** the original:
+
+```bash
+# Rename cli_env to cline
+conda deactivate                          # Deactivate the source env first
+conda create --name cline --clone cli_env # Clone with new name
+conda env remove -n cli_env               # Remove the old environment
+```
+
+**Verification:**
+```bash
+conda env list            # Confirm cli_env is gone and cline exists
+conda activate cline      # Activate the renamed environment
+conda info --envs         # Verify package list matches the original
+```
+
+**Caveats:**
+- This process does **not** update any scripts, config files, or IDEs that reference the old environment name. Update those manually after renaming.
+- Cloning preserves all packages, but if you clone across different machines or OSes, use the export/import method instead (Method 2) to ensure dependency compatibility.
+
+#### Method 2: `conda create --clone` (Recommended for local cloning)
+
 ```bash
 # Clone an existing environment
 conda create --name new_env_name --clone original_env_name
