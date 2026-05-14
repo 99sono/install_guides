@@ -19,6 +19,20 @@
       }
     },
 
+    "local-gemma4": {
+      "name": "Gemma 4 (Local RTX 5090)",
+      "options": {
+        "baseURL": "http://localhost:8000/v1",
+        "apiKey": "YOUR_API_KEY_HERE"
+      },
+      "models": {
+        "gemma-4-26b-it-nvfp4": {
+          "name": "gemma-4-26b-it-nvfp4",
+          "limit": { "context": 192000, "output": 32768 }
+        }
+      }
+    },
+
     "dgx-spark": {
       "name": "Qwen3.6-35B-A3B-NVFP4 (DGX Spark Remote)",
       "options": {
