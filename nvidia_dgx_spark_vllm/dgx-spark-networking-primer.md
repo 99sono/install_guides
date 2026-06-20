@@ -30,7 +30,7 @@ Here is the full output from spark02:
 4:  enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> ...     ← keep (ConnectX-7 Port 1 dup)
 5:  enP2p1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> ...   ← keep (ConnectX-7 Port 2)
 6:  enP2p1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> ...   ← keep (ConnectX-7 Port 2 dup)
-7:  enx0050b68c0623: <NO-CARRIER,BROADCAST,MULTICAST,UP> ... ← keep (USB ethernet)
+7:  enx001122334455: <NO-CARRIER,BROADCAST,MULTICAST,UP> ... ← keep (USB ethernet)
 8:  wlP9s9: <NO-CARRIER,BROADCAST,MULTICAST,UP> ...        ← keep (WiFi)
 9:  docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> ...
 10: br-bdc9f2b0839b: <BROADCAST,MULTICAST,UP,LOWER_UP> ...
@@ -185,7 +185,7 @@ Some devices use a **slot-based** name variant (`enP7s7`) where firmware provide
 
 ### Special Case: USB Ethernet (No PCI)
 
-`enx0050b68c0623` — the `x` means the name is derived from the **MAC address**. This happens for USB ethernet adapters that have no PCI topology to describe.
+`enx001122334455` — the `x` means the name is derived from the **MAC address** (in this example, `00:11:22:33:44:55`). This happens for USB ethernet adapters that have no PCI topology to describe.
 
 ---
 
@@ -271,7 +271,7 @@ Currently down (carrier 0, no IP). Present on the Spark but not typically used f
 │ enP2p1s0f0np0│ mlx5_core  │ 200 Gb/s │ 0002:01:00.0 │ ConnectX-7 Port 2  │
 │ enP2p1s0f1np1│ (Mellanox) │          │ 0002:01:00.1 │ (to other Spark)   │
 ├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
-│ enx0050b68c… │ cdc_ncm    │ ?        │ USB (no PCI) │ USB ethernet dongle│
+│ enx00112233… │ cdc_ncm    │ ?        │ USB (no PCI) │ USB ethernet dongle│
 ├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
 │ wlP9s9       │ mt7925e    │ ?        │ 0009:01:00.0 │ WiFi (not in use)  │
 └──────────────┴────────────┴──────────┴──────────────┴────────────────────┘
