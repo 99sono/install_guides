@@ -158,8 +158,9 @@ ssh -i ~/.ssh/id_ed25519 -T git@github.com
 
 ### 3. Debug SSH Agent
 ```bash
-# Check running processes
-ps aux | grep ssh-agent
+# Check running processes (use -x for exact match to exclude gcr-ssh-agent)
+ps aux | grep ssh-agent        # Shows all (including gcr-ssh-agent)
+pgrep -xa ssh-agent            # Shows only /usr/bin/ssh-agent PIDs+args
 
 # Check environment variables
 env | grep SSH
@@ -249,8 +250,8 @@ ssh-add ~/.ssh/id_ed25519
 
 ### Reset SSH Environment
 ```bash
-# Kill all SSH agents
-killall ssh-agent
+# Kill only /usr/bin/ssh-agent (not gcr-ssh-agent)
+pkill -x ssh-agent
 
 # Start fresh
 eval "$(ssh-agent -s)"

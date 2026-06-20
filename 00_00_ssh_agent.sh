@@ -8,8 +8,11 @@ KEY_PATH="$HOME/.ssh/id_ed25519"
 rm -f "$ENV_FILE"
 
 # 2. Reuse existing agent if it's alive and responsive
-if [ -n "${SSH_AUTH_SOCK:-}" ] && ssh-add -l &>/dev/null; then
-    echo "✓ SSH agent is already running and responsive."
+if pgrep -x ssh-agent &>/dev/null && [ -n "${SSH_AUTH_SOCK:-}" ] && ssh-add -l &>/dev/null; then
+    # Persist environment variables so the file can be sourced elsewhere
+    printf 'export SSH_AUTH_SOCK="%s"\nexport SSH_AGENT_PID="%s"\n' \
+        "$SSH_AUTH_SOCK" "$SSH_AGENT_PID" > "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
 else
     # Start a new agent
     eval "$(ssh-agent -s)"

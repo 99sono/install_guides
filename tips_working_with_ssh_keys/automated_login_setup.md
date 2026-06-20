@@ -17,9 +17,12 @@ KEY_PATH="$HOME/.ssh/id_ed25519"
 # 1. Clean up stale state
 rm -f "$ENV_FILE"
 
-# 2. Reuse existing agent if it's alive and responsive
-if [ -n "${SSH_AUTH_SOCK:-}" ] && ssh-add -l &>/dev/null; then
-    echo "✓ SSH agent is already running and responsive."
+# 2. Reuse existing agent (only /usr/bin/ssh-agent, not gcr-ssh-agent)
+if pgrep -x ssh-agent &>/dev/null && [ -n "${SSH_AUTH_SOCK:-}" ] && ssh-add -l &>/dev/null; then
+    # Persist environment variables so the file can be sourced elsewhere
+    printf 'export SSH_AUTH_SOCK="%s"\nexport SSH_AGENT_PID="%s"\n' \
+        "$SSH_AUTH_SOCK" "$SSH_AGENT_PID" > "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
 else
     # Start a new agent
     eval "$(ssh-agent -s)"
@@ -56,9 +59,10 @@ source ~/.ssh/automated_login.sh
 ### How It Works
 
 1. **`rm -f "$ENV_FILE"`** — cleans stale environment file from dead agents
-2. **`ssh-add -l`** — checks the agent is actually alive and responsive (not just a stale PID)
-3. **Key check** — only adds the key if it's not already loaded (idempotent)
-4. **Graceful fallback** — warns if the key file is missing instead of hard-failing
+2. **`pgrep -x ssh-agent`** — checks specifically for `/usr/bin/ssh-agent` (not gcr-ssh-agent)
+3. **`ssh-add -l`** — confirms the agent is alive and responsive (not just a stale PID)
+4. **Key check** — only adds the key if it's not already loaded (idempotent)
+5. **Graceful fallback** — warns if the key file is missing instead of hard-failing
 
 ## Testing Your Setup
 

@@ -5,7 +5,7 @@ ENV_FILE="$HOME/.ssh/agent-env"
 
 echo "ℹ Killing all running ssh-agent processes..."
 
-if killall ssh-agent 2>/dev/null; then
+if pkill -x ssh-agent 2>/dev/null; then
     echo "✓ ssh-agent process(es) terminated successfully."
 else
     echo "ℹ No ssh-agent processes found (already stopped)."
