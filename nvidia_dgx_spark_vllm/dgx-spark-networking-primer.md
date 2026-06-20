@@ -120,55 +120,76 @@ Everything after the prefix describes the **connection bus** and **location on t
 
 ### The Two Location Styles
 
-**Style 1 — Plain PCI (short form):** Device on PCI **segment 0000** (the default).
+### Style 1 — Short Form (segment 0000, the default)
+
+Applies to ConnectX-7 Port 1 (`enp1s0f0np0`). Because the PCI segment is `0000`, the segment prefix is omitted entirely.
 
 ```
 en  p  1  s  0  f  0  np 0
 ^   ^  ^  ^  ^  ^  ^  ^  ^
-|   |  |  |  |  |  |  |  +-- physical port index
-|   |  |  |  |  |  |  +----- np = "network physical port"
-|   |  |  |  |  |  +-------- f0 = function 0
-|   |  |  |  |  +----------- s = slot keyword
-|   |  |  |  +-------------- 0 = device/slot number
-|   |  |  +----------------- s = slot keyword
-|   |  +-------------------- 1 = bus number (PCI bus 0000:01)
-|   +----------------------- p = lowercase (segment = 0000, omitted)
-+--------------------------- en = Ethernet
+│   │  │  │  │  │  │  │  └── physical port index
+│   │  │  │  │  │  │  └───── np = keyword "network physical port"
+│   │  │  │  │  │  └──────── f0 = function 0
+│   │  │  │  │  └─────────── s = keyword "slot"
+│   │  │  │  └────────────── 0 = device number (the "00" in `0000:01:00.0`)
+│   │  │  └───────────────── s = keyword "slot"
+│   │  └──────────────────── 1 = PCI bus number (the "01" in `0000:01:00.0`)
+│   └─────────────────────── p = keyword "PCI bus" — lowercase because
+│                             the segment is the default (0000), so the
+│                             P<segment> part is not shown. Only the bus
+│                             number follows.
+└─────────────────────────── en = Ethernet
 ```
+
+> **What the segment omission means**: The full name would be `enP0p1s0f0np0` (with `P0` for segment 0000), but since segment 0000 is the default for all PCI devices on single-segment systems, the convention drops it. When you see just lowercase `p`, it tells you "this device lives on segment 0000 — no special prefix needed."
 
 Decoded: Ethernet on PCI `0000:01:00.0`, function 0, physical port 0.
 
-**Style 2 — PCI with domain (long form):** Device on a non-zero PCI **segment** (0002, 0007, etc.).
+### Style 2 — Slot-Based Name (non-zero segment)
+
+Applies to the Realtek NIC (`enP7s7`). This device has no multi-function complexity, so the name is shorter — and it uses a **slot** identifier from firmware rather than the full PCI bus path.
 
 ```
 en  P  7  s  7
 ^   ^  ^  ^  ^
-|   |  |  |  +-- slot 0, function 0 (packed into one digit)
-|   |  |  +----- s = slot keyword
-|   |  +-------- 7 = segment number (PCI segment 0007)
-|   +----------- P = uppercase (segment is non-zero, must be shown)
-+--------------- en = Ethernet
+│   │  │  │  └── slot number (assigned by firmware — may encode bus+device
+│   │  │  │        compactly; in this case PCI address is 0007:01:00.0)
+│   │  │  └───── s = keyword "slot"
+│   │  └──────── 7 = PCI segment number (the "0007" in `0007:01:00.0`)
+│   └─────────── P = uppercase because the segment (0007) is non-zero.
+│                 Without this prefix, you couldn't tell if "7" was the
+│                 segment or the bus. The uppercase P says "segment follows."
+└─────────────── en = Ethernet
 ```
+
+> **Why uppercase P instead of lowercase p?** The uppercase `P` introduces a **PCI segment number** that is not 0000. Without it, a name like `en7s7` would be ambiguous — is 7 the bus or the segment? The capital P disambiguates: `P7` = segment 0007.
 
 Decoded: Ethernet on PCI `0007:01:00.0`.
 
-For multi-function PCI devices, the pattern mixes both:
+### Style 3 — Full PCI Path with Domain (non-zero segment, multi-function)
+
+Applies to ConnectX-7 Port 2 (`enP2p1s0f0np0`). This combines the non-zero segment prefix with the full PCI bus/device/function path.
 
 ```
 en  P  2  p  1  s  0  f  0  np 0
 ^   ^  ^  ^  ^  ^  ^  ^  ^  ^  ^
-|   |  |  |  |  |  |  |  |  |  +-- physical port index
-|   |  |  |  |  |  |  |  |  +----- np
-|   |  |  |  |  |  |  |  +-------- f0 = function 0
-|   |  |  |  |  |  |  +----------- s = slot keyword
-|   |  |  |  |  |  +-------------- 0 = device number
-|   |  |  |  |  +----------------- p = bus keyword
-|   |  |  |  +-------------------- 1 = bus number
-|   |  |  +----------------------- P = segment non-zero
-|   |  +-------------------------- 2 = segment 0002
-|   +----------------------------- P
-+--------------------------------- en = Ethernet
+│   │  │  │  │  │  │  │  │  │  └── physical port index
+│   │  │  │  │  │  │  │  │  └───── np = "network physical port"
+│   │  │  │  │  │  │  │  └──────── f0 = function 0
+│   │  │  │  │  │  │  └─────────── s = keyword "slot"
+│   │  │  │  │  │  └────────────── 0 = device number
+│   │  │  │  │  └───────────────── p = keyword "PCI bus" — lowercase here
+│   │  │  │  │                      because this part is the bus number
+│   │  │  │  │                      within the segment, not the segment itself
+│   │  │  │  └──────────────────── 1 = PCI bus number
+│   │  │  └─────────────────────── P = uppercase — introduces the segment
+│   │  │                           (same role as the P in enP7s7 above)
+│   │  └────────────────────────── 2 = PCI segment number (the "0002")
+│   └───────────────────────────── P = uppercase segment marker
+└───────────────────────────────── en = Ethernet
 ```
+
+> **Why both uppercase P and lowercase p in the same name?** The first `P` introduces the non-zero segment (`0002`). Then, within that segment, a regular lowercase `p` introduces the bus number (1). Without the initial `P2`, the `p1` would be assumed to be on segment 0000 — which would be wrong. Both are needed when the segment is non-zero.
 
 Decoded: Ethernet on PCI `0002:01:00.0`, function 0, physical port 0.
 
