@@ -11,37 +11,130 @@ A DGX Spark doesn't have a "normal" PC networking layout. It has **two networkin
 1. **Regular Ethernet** — Realtek PCIe NIC, connects to your home/office LAN, gets an IP via DHCP. This is `192.168.1.x` traffic.
 2. **ConnectX-7 (QSFP112)** — Dual-port 200/400 Gb/s RDMA adapter for inter-node GPU communication. This is `10.0.x.x` cluster traffic.
 
-Newcomers run `ip link` or `lspci` and see cryptic names like `enP7s7`, `enp1s0f0np0`, `rocep1s0f0` and have no idea what is what. This guide walks through every interface on a real DGX Spark and explains how to read the naming, purpose, and relationship between the pieces.
+Newcomers run `ip link` or `lspci` and see cryptic names like `enP7s7`, `enp1s0f0np0`, `rocep1s0f0` and have no idea what is what. This guide walks through the physical interfaces on a real DGX Spark and explains how to read the naming, purpose, and relationship between the pieces.
 
 ---
 
-## 1. The Network Interfaces at a Glance
+## 1. What `ip link` Shows You
 
-Here is the output of `ip link show` on a real DGX Spark (spark02):
+When you run `ip link`, the kernel lists every registered **network interface** — both physical hardware and virtual software devices. On a DGX Spark, most of the output is virtual noise from Docker and system internals. The physical hardware you care about is only a handful of entries.
+
+### Filtering the Noise
+
+Here is the full output from spark02:
 
 ```
-1: lo: ...
-2: enP7s7: <BROADCAST,MULTICAST,UP,LOWER_UP> ...  ← Regular Ethernet (to your router)
-3: enp1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP>  ← ConnectX-7 Port 1, Function 0
-4: enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP>  ← ConnectX-7 Port 1, Function 1
-5: enP2p1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> ← ConnectX-7 Port 2, Function 0
-6: enP2p1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> ← ConnectX-7 Port 2, Function 1
+1:  lo: <LOOPBACK,UP,LOWER_UP> ...
+2:  enP7s7: <BROADCAST,MULTICAST,UP,LOWER_UP> ...          ← keep (regular ethernet)
+3:  enp1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> ...     ← keep (ConnectX-7 Port 1)
+4:  enp1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> ...     ← keep (ConnectX-7 Port 1 dup)
+5:  enP2p1s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> ...   ← keep (ConnectX-7 Port 2)
+6:  enP2p1s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> ...   ← keep (ConnectX-7 Port 2 dup)
+7:  enx0050b68c0623: <NO-CARRIER,BROADCAST,MULTICAST,UP> ... ← keep (USB ethernet)
+8:  wlP9s9: <NO-CARRIER,BROADCAST,MULTICAST,UP> ...        ← keep (WiFi)
+9:  docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> ...
+10: br-bdc9f2b0839b: <BROADCAST,MULTICAST,UP,LOWER_UP> ...
+11: vethb1e3d65@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> ...
+12: veth514f127@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> ...
+13: veth3ee382b@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> ...
 ```
 
-Let's break each one down.
+Out of 13 entries, **only 6 are physical hardware**. The rest are:
+
+- `lo` — loopback (purely in-kernel, no real cable)
+- `docker0`, `br-*` — Docker bridges
+- `veth*` — virtual ethernet pairs for containers
+
+For this guide, we focus on the physical interfaces. Virtual ones are out of scope.
 
 ---
 
-## 2. Regular Ethernet: `enP7s7`
+## 2. How to Read an Interface Name (The Pattern Language)
+
+Every physical interface name encodes its **hardware location** and **type** using a consistent pattern. Once you learn the grammar, you can decode any name on sight.
+
+### The Two-Letter Type Prefix
+
+| Prefix | Meaning | Example |
+|--------|---------|---------|
+| `en` | Ethernet (wired) | `enP7s7` |
+| `wl` | Wireless LAN | `wlP9s9` |
+| `ww` | WWAN / cellular | (not present here) |
+
+Everything after the prefix describes the **connection bus** and **location on that bus**.
+
+### The Two Location Styles
+
+**Style 1 — Plain PCI (short form):** Device on PCI **segment 0000** (the default).
+
+```
+en  p  1  s  0  f  0  np 0
+^   ^  ^  ^  ^  ^  ^  ^  ^
+|   |  |  |  |  |  |  |  +-- physical port index
+|   |  |  |  |  |  |  +----- np = "network physical port"
+|   |  |  |  |  |  +-------- f0 = function 0
+|   |  |  |  |  +----------- s = slot keyword
+|   |  |  |  +-------------- 0 = device/slot number
+|   |  |  +----------------- s = slot keyword
+|   |  +-------------------- 1 = bus number (PCI bus 0000:01)
+|   +----------------------- p = lowercase (segment = 0000, omitted)
++--------------------------- en = Ethernet
+```
+
+Decoded: Ethernet on PCI `0000:01:00.0`, function 0, physical port 0.
+
+**Style 2 — PCI with domain (long form):** Device on a non-zero PCI **segment** (0002, 0007, etc.).
+
+```
+en  P  7  s  7
+^   ^  ^  ^  ^
+|   |  |  |  +-- slot 0, function 0 (packed into one digit)
+|   |  |  +----- s = slot keyword
+|   |  +-------- 7 = segment number (PCI segment 0007)
+|   +----------- P = uppercase (segment is non-zero, must be shown)
++--------------- en = Ethernet
+```
+
+Decoded: Ethernet on PCI `0007:01:00.0`.
+
+For multi-function PCI devices, the pattern mixes both:
+
+```
+en  P  2  p  1  s  0  f  0  np 0
+^   ^  ^  ^  ^  ^  ^  ^  ^  ^  ^
+|   |  |  |  |  |  |  |  |  |  +-- physical port index
+|   |  |  |  |  |  |  |  |  +----- np
+|   |  |  |  |  |  |  |  +-------- f0 = function 0
+|   |  |  |  |  |  |  +----------- s = slot keyword
+|   |  |  |  |  |  +-------------- 0 = device number
+|   |  |  |  |  +----------------- p = bus keyword
+|   |  |  |  +-------------------- 1 = bus number
+|   |  |  +----------------------- P = segment non-zero
+|   |  +-------------------------- 2 = segment 0002
+|   +----------------------------- P
++--------------------------------- en = Ethernet
+```
+
+Decoded: Ethernet on PCI `0002:01:00.0`, function 0, physical port 0.
+
+### Special Case: USB Ethernet (No PCI)
+
+`enx0050b68c0623` — the `x` means the name is derived from the **MAC address**. This happens for USB ethernet adapters that have no PCI topology to describe.
+
+---
+
+## 3. The Physical Interfaces (One by One)
+
+### 3a. Regular Ethernet: `enP7s7`
 
 This is your standard RJ45 port — the one you plug into your home router, office switch, or whatever gives you internet access.
 
 ```
-Interface : enP7s7
+Name      : enP7s7
 Driver    : r8127 (Realtek)
-Speed     : 1 Gb/s (typical)
+Speed     : 1 Gb/s
 PCI Slot  : 0007:01:00.0
-Role      : Management / Internet access
+Role      : Management / SSH / internet
 ```
 
 On this system, it gets an IP via DHCP:
@@ -58,70 +151,25 @@ $ ip route show default
 default via 192.168.1.1 dev enP7s7 proto dhcp src 192.168.1.56 metric 104
 ```
 
-> **Key point**: This is what you SSH into. It has nothing to do with GPU-to-GPU communication.
+**Key point**: This is what you SSH into. It has nothing to do with GPU-to-GPU communication.
 
-### Interface Naming Decoder
+### 3b. ConnectX-7 (QSFP112): `enp1s0f0np0`, `enP2p1s0f0np0`, etc.
 
-The name `enP7s7` follows the **Predictable Network Interface Names** scheme:
-
-| Part | Meaning |
-|------|---------|
-| `en` | Ethernet |
-| `P` | PCI bus (capital `P` = domain 0, the leading segment number appended) |
-| `7` | PCI domain number (this is on segment `0007`) |
-| `s` | Slot |
-| `7` | Slot number (PCI slot 0, function 0 — the trailing digit) |
-
-In simpler terms: it means "Ethernet interface on PCI domain 7, slot 1, function 0". Older naming would have called it `eth0`.
-
-You can verify the PCI location:
-
-```bash
-$ cat /sys/class/net/enP7s7/device/uevent | grep PCI_SLOT_NAME
-PCI_SLOT_NAME=0007:01:00.0
-```
-
----
-
-## 3. ConnectX-7 Interfaces: `enp1s0f0np0`, `enp1s0f1np1`, etc.
-
-These are the **two physical QSFP112 ports** on the rear panel, each appearing as **two PCI functions** (f0 and f1). The physical cables from the two DGX Sparks plug into these.
+These are the **two physical QSFP112 ports** on the rear panel for GPU cluster interconnect. Each physical port appears as **two PCI functions** in `ip link`:
 
 ```
-Physical Port 1 (left, from rear)
-  ├── enp1s0f0np0  (function 0 — primary data path)  → rocep1s0f0
-  └── enp1s0f1np1  (function 1 — secondary)          → rocep1s0f1
+Physical Port 1 (left, looking at rear)
+  ├── enp1s0f0np0   (function 0 — primary)    →  200 Gb/s
+  └── enp1s0f1np1   (function 1 — secondary)   →  200 Gb/s
 
-Physical Port 2 (right, from rear)
-  ├── enP2p1s0f0np0 (function 0 — primary data path) → roceP2p1s0f0
-  └── enP2p1s0f1np1 (function 1 — secondary)          → roceP2p1s0f1
+Physical Port 2 (right, looking at rear)
+  ├── enP2p1s0f0np0 (function 0 — primary)    →  200 Gb/s
+  └── enP2p1s0f1np1 (function 1 — secondary)   →  200 Gb/s
 ```
 
-### Why 4 interfaces for 2 ports?
+Why 4 entries for 2 physical ports? The mlx5 driver splits each port into two PCI functions. Function 0 is the primary data interface. Function 1 is a duplicate — it shows identical link state and speed because both reflect the same physical cable. For most use cases (including vLLM/NCCL), you only need the f0 interfaces.
 
-The ConnectX-7 is a single ASIC that covers both ports. The NVIDIA driver splits each port into two PCI functions. **Function 0** is the standard data interface. **Function 1** is also usable and shows identical link state — both reflect the same physical cable. For most use cases (including vLLM/NCCL), you only need the f0 interfaces.
-
-### Naming Decoder
-
-Take `enp1s0f0np0`:
-
-| Part | Meaning |
-|------|---------|
-| `en` | Ethernet |
-| `p` | PCI bus number (lowercase `p` = bus number < 10) |
-| `1` | PCI bus number (this is on bus `0000:01`) |
-| `s` | Slot |
-| `0` | Device number |
-| `f` | Function |
-| `0` | Function number (`f0` = function 0) |
-| `np` | Network Physical port |
-| `0` | Physical port index |
-
-The name `enP2p1s0f0np0` follows a similar pattern but with an uppercase `P` indicating a PCI domain number >= 10 (actually PCI segment `0002` — the uppercase `P` is used when the segment number needs to be disambiguated).
-
-### Link Status
-
-All four interfaces show `carrier 1` and `operstate up` when a cable is plugged in and the other end is powered on:
+All four show `carrier 1` when the cable is plugged in and the other end is powered on:
 
 ```bash
 $ cat /sys/class/net/enp1s0f0np0/carrier
@@ -130,7 +178,64 @@ $ cat /sys/class/net/enp1s0f0np0/operstate
 up
 ```
 
+### 3c. WiFi: `wlP9s9`
+
+```
+Name      : wlP9s9 (altname: wlP9p1s0)
+Driver    : mt7925e (MediaTek)
+PCI Slot  : 0009:01:00.0
+```
+
+Currently down (carrier 0, no IP). Present on the Spark but not typically used for development.
+
 ---
+
+## 4. At a Glance: All Physical Interfaces
+
+```
+┌──────────────┬────────────┬──────────┬──────────────┬────────────────────┐
+│ Interface    │ Driver     │ Speed    │ PCI Slot     │ What it connects   │
+├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
+│ enP7s7       │ r8127      │ 1 Gb/s   │ 0007:01:00.0 │ Router / LAN       │
+│              │ (Realtek)  │          │              │ (SSH, internet)    │
+├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
+│ enp1s0f0np0  │ mlx5_core  │ 200 Gb/s │ 0000:01:00.0 │ ConnectX-7 Port 1  │
+│ enp1s0f1np1  │ (Mellanox) │          │ 0000:01:00.1 │ (to other Spark)   │
+├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
+│ enP2p1s0f0np0│ mlx5_core  │ 200 Gb/s │ 0002:01:00.0 │ ConnectX-7 Port 2  │
+│ enP2p1s0f1np1│ (Mellanox) │          │ 0002:01:00.1 │ (to other Spark)   │
+├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
+│ enx0050b68c… │ cdc_ncm    │ ?        │ USB (no PCI) │ USB ethernet dongle│
+├──────────────┼────────────┼──────────┼──────────────┼────────────────────┤
+│ wlP9s9       │ mt7925e    │ ?        │ 0009:01:00.0 │ WiFi (not in use)  │
+└──────────────┴────────────┴──────────┴──────────────┴────────────────────┘
+```
+
+### How to Check the Driver Yourself
+
+When a name isn't obvious, look at the driver:
+
+```bash
+$ ethtool -i enP7s7      | grep driver
+driver: r8127          → Realtek = regular ethernet
+
+$ ethtool -i enp1s0f0np0 | grep driver
+driver: mlx5_core      → Mellanox = ConnectX-7
+```
+
+Or check the PCI vendor ID:
+
+```bash
+$ cat /sys/class/net/enP7s7/device/vendor
+0x10ec                 → Realtek
+
+$ cat /sys/class/net/enp1s0f0np0/device/vendor
+0x15b3                 → Mellanox
+```
+
+---
+
+## 5. RDMA: The Confusing Part (Same Cable, Two Personalities)
 
 ## 4. RDMA: The Confusing Part (Same Cable, Two Personalities)
 
@@ -229,7 +334,7 @@ On the DGX Spark, the ports run in **RoCE v2 mode** (link_layer = Ethernet). Thi
 
 ---
 
-## 5. The Grace CPU's Unique PCIe Topology
+## 6. The Grace CPU's Unique PCIe Topology
 
 The DGX Spark uses an **NVIDIA Grace CPU**, which has multiple independent PCIe root complexes. This is why you see interfaces on different PCI segments:
 
@@ -248,7 +353,7 @@ Each `-[000X:00]` is a separate PCIe root complex within the Grace SoC. This mat
 
 ---
 
-## 6. Quick Command Reference
+## 7. Quick Command Reference
 
 | Goal | Command |
 |------|---------|
@@ -265,16 +370,6 @@ Each `-[000X:00]` is a separate PCIe root complex within the Grace SoC. This mat
 | Show driver info | `ethtool -i <iface>` |
 | Show all mlx5 interfaces | `ls /sys/class/net/ \| grep -E 'enp\|enP' \| xargs -I{} sh -c 'echo "{} -> $(cat /sys/class/net/{}/device/uevent 2>/dev/null \| grep PCI_SLOT_NAME \| cut -d= -f2)"'` |
 | Watch traffic on ConnectX-7 | `watch -n 1 cat /sys/class/net/<iface>/statistics/tx_bytes` |
-
----
-
-## 7. Quick Reference: Interface Purpose Table
-
-| Interface(s) | Type | Driver | Speed | Purpose |
-|--------------|------|--------|-------|---------|
-| `enP7s7` | RJ45 (1 GbE) | `r8127` | 1 Gb/s | Management, SSH, internet |
-| `enp1s0f0np0` / `enp1s0f1np1` | QSFP112 Port 1 | `mlx5_core` | 200 Gb/s | GPU cluster interconnect |
-| `enP2p1s0f0np0` / `enP2p1s0f1np1` | QSFP112 Port 2 | `mlx5_core` | 200 Gb/s | GPU cluster interconnect |
 
 ---
 
