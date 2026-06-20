@@ -49,6 +49,61 @@ For this guide, we focus on the physical interfaces. Virtual ones are out of sco
 
 ---
 
+## 1.5 Before Parsing Names: Every Network Device Lives on PCI Express
+
+Every wired network interface on this machine is a **PCI Express (PCIe) device** — including the Realtek NIC and the ConnectX-7 ports. WiFi is also PCIe. Understanding this is the key to understanding the names.
+
+### The PCI Address Format
+
+Every PCIe device has a hierarchical address:
+
+```
+  domain   :  bus  : device . function
+  ───────     ───    ─────     ───────
+   0000      :  01  :  00   .    0
+```
+
+- **domain** (or **segment**) — groups PCI buses under one PCIe root complex. The Grace CPU has multiple root complexes, so you see multiple domains: `0000`, `0002`, `0007`, `0009`. A normal PC usually has just `0000`.
+- **bus** — a PCI bus number within that domain.
+- **device** — the device number on that bus.
+- **function** — a sub-function of a multi-function device (the ConnectX-7 exposes two functions per port: f0 and f1).
+
+### How the Interface Name Relates to the PCI Address
+
+The `ip link` name is derived from this PCI address. The naming convention encodes parts of the address, and the **domain/segment** controls whether you see an uppercase `P` or a lowercase `p`:
+
+| If domain is … | Name pattern | Example |
+|----------------|-------------|---------|
+| `0000` (default) | `enp<bus>s<device>f<func>np<port>` | `enp1s0f0np0` |
+| non-zero (e.g. `0002`) | `enP<domain>p<bus>s<device>f<func>np<port>` | `enP2p1s0f0np0` |
+
+Domain `0000` is the default — it's **omitted** from the name, making it shorter. This is purely a convention to keep names concise.
+
+### How to Look Up the PCI Address for Any Interface
+
+You don't need to memorize — you can always check:
+
+```bash
+# Quick method — direct from sysfs
+$ cat /sys/class/net/enp1s0f0np0/device/uevent | grep PCI_SLOT_NAME
+PCI_SLOT_NAME=0000:01:00.0
+
+# Also visible via ethtool
+$ ethtool -i enp1s0f0np0 | grep bus-info
+bus-info: 0000:01:00.0
+```
+
+Try it on the noisy interfaces:
+
+```bash
+$ cat /sys/class/net/docker0/device/uevent 2>/dev/null | grep PCI_SLOT_NAME
+# (nothing — docker0 has no PCI device because it is virtual)
+```
+
+This is the quick test: if `PCI_SLOT_NAME` exists, it is a physical PCIe device. If not, it is virtual.
+
+---
+
 ## 2. How to Read an Interface Name (The Pattern Language)
 
 Every physical interface name encodes its **hardware location** and **type** using a consistent pattern. Once you learn the grammar, you can decode any name on sight.
