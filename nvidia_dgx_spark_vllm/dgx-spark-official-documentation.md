@@ -8,6 +8,10 @@
 ## Vendor-Specific Documentation Note
 Different vendors of DGX Spark devices may have their own instruction manuals for performing a factory reset. As a reference, Acer provides documentation for their Veriton GN100 AI Workstation [here](https://community.acer.com/en/kb/articles/19556-getting-started-with-the-acer-veriton-gn100-ai-workstation). Always consult the documentation provided by your specific hardware vendor for the most accurate recovery instructions.
 
+## Related Guides in this Repo
+
+- [ConnectX-7 Clustering — Two-Node Direct Connect](./dgx-spark-connectx7-clustering.md) — Dual-cable point-to-point RoCE v2 setup for multi-node inference.
+
 ## High-Level Workflow Overview
 
 The DGX Spark recovery is a structured, three-phase process designed to transition the system from its current state to a verified, clean, and secure factory-standard environment.
